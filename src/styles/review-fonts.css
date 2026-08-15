@@ -1,0 +1,25 @@
+/**
+ * Faces used **only** by the discarded candidate worlds under `/home-ideas`.
+ *
+ * These six families — Archivo, Archivo Black, Barlow Condensed, Bodoni Moda, DM Serif
+ * Display, Public Sans — dress Bill, Poster, Program, Workbench and Studio. Desk won the
+ * tournament, and Desk sets Bricolage Grotesque / Figtree / DM Mono, which stay in
+ * `home-ideas.css` because every shipped surface inherits them.
+ *
+ * They used to sit in the same `@import` as Desk's, at the top of a stylesheet the whole
+ * app pulls in, so a visitor to `/image` downloaded a two-axis variable Didone with a full
+ * italic weight range to render a page that never sets a serif. Moving them here — a
+ * stylesheet only the review routes import — takes them off the critical path of every
+ * shipped route without changing how the candidates look when someone actually reviews
+ * them.
+ *
+ * Bodoni Moda is a two-axis variable font (opsz, wght) and the axis syntax is unforgiving:
+ * axes must be named alphabetically and every variable axis needs a `..` *range*, not a
+ * semicolon list. The first version of this line asked for
+ * `opsz,wght@6..96,400;6..96,500;…` which Google silently served as weight-400 faces only,
+ * so `font-weight: 900` on the playbill's display type was **synthesised** — and synthetic
+ * bold on a Didone thickens the stems while leaving the hairlines behind, which rendered
+ * as a ghost outline of every letter. Real weights, requested correctly, fix it. `ital` is
+ * in the tuple because the bill genuinely sets italic (the billing line and the numerals).
+ */
+@import url("https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Archivo+Black&family=Barlow+Condensed:wght@500;600;700;800;900&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=DM+Serif+Display:ital@0;1&family=Public+Sans:wght@400;500;600;700;800;900&display=swap");

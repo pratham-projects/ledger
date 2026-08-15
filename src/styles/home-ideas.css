@@ -1,0 +1,1996 @@
+/**
+ * Six in-depth landing-page directions for `/`, each scoped to a class.
+ *
+ * Why CSS variables rather than five Tailwind themes: every token in this project is
+ * already a custom property consumed through `tailwind.config.ts` (`bg-panel` resolves to
+ * `var(--panel)`). Overriding the variables on a wrapper element therefore re-skins every
+ * existing utility inside it for free, which is what lets five palettes coexist in one
+ * build without a variant prop threaded through every component.
+ *
+ * They form two families: Desk (prompt as the working surface) and Bill (the loaded
+ * model as the billed performer). Every page includes three tap-to-apply palettes.
+ *
+ * All six are dark, per the brand commitment in PRODUCT.md. None of them is
+ * near-black: the incumbent's `#060608` ground against a `#0b0c10` panel is a 3-value
+ * separation that no one can see, and that flatness — not darkness — is what made the
+ * page unreadable. Every world here keeps a measured gap between ground, raised, and
+ * recessed surfaces, and every body value clears 7:1 against its own ground.
+ */
+
+/**
+ * **The shipped type stack, and only that.** Bricolage Grotesque (display), Figtree
+ * (sans), DM Mono (mono) — the three faces `:root` in `globals.css` actually sets, so
+ * every route needs them and they belong on the critical path.
+ *
+ * The six families the *discarded* candidate worlds dress themselves in — Archivo, Archivo
+ * Black, Barlow Condensed, Bodoni Moda, DM Serif Display, Public Sans — used to share this
+ * line, which meant a visitor to `/image` downloaded a two-axis variable Didone with a full
+ * italic weight range to render a page that never sets a serif. They now live in
+ * `styles/review-fonts.css`, imported by the `/home-ideas` bundle alone.
+ *
+ * Spectral went with them, for a different reason: it was requested as Desk's editorial
+ * italic and then never set — `--font-editorial` resolves to Bricolage. A face nothing
+ * renders is a download nobody needs.
+ *
+ * Bricolage Grotesque is variable on three axes and Google's axis syntax is unforgiving:
+ * axes must be named alphabetically (opsz, wdth, wght) and every variable axis needs a
+ * `..` *range*, not a semicolon list — ask wrongly and it silently serves one weight, and
+ * every other weight you set is synthesised. Its wdth axis is what earns it here: the
+ * headline narrows as it grows instead of being tracked in by hand.
+ */
+@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,200..800&family=Figtree:wght@400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap");
+
+/* ───────────────────────────────────────────────────────────────────────────
+   Shared behaviour
+   Not a design system — the shared behaviour all six need to be judged
+   fairly against each other.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+.idea {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  min-height: 100dvh;
+}
+
+/* Focus is never removed in any world; it is re-tinted per world so it stays visible on
+   that world's ground. Global `a/button:focus-visible` in globals.css uses `--accent`,
+   which every block below redefines, so this is inherited correctly and needs no
+   per-world rule. */
+
+.idea ::selection {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+/* One authored motion moment per world, declared here so no component writes a duration.
+   `idea-rise` is the shared arrival: content is visible by default and settles upward,
+   exponential ease-out, nothing animating a layout property. */
+@keyframes idea-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+}
+
+@keyframes idea-glow {
+  from {
+    opacity: 0.55;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes idea-sweep {
+  from {
+    transform: translate3d(-100%, 0, 0);
+  }
+  to {
+    transform: translate3d(100%, 0, 0);
+  }
+}
+
+.idea-rise {
+  animation: idea-rise 620ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.idea-rise-2 {
+  animation: idea-rise 620ms cubic-bezier(0.16, 1, 0.3, 1) 80ms both;
+}
+
+.idea-rise-3 {
+  animation: idea-rise 620ms cubic-bezier(0.16, 1, 0.3, 1) 160ms both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .idea-rise,
+  .idea-rise-2,
+  .idea-rise-3 {
+    animation: none;
+  }
+
+  .idea *,
+  .idea *::before,
+  .idea *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   DESK — the prompt desk
+   The box you type into is the hero, the way NightCafe and Runway open. Warm
+   plum-brown rather than black so a first-time visitor reads "friendly", and
+   rounded because everything a consumer audience has been taught to type into
+   is rounded.
+
+   Desk is the candidate carrying the whole product, so it mounts the real
+   Ledger components (spine, specimen band, idea reel, the five demos, terms)
+   rather than re-implementing them. It re-skins them by owning the token set:
+   `bg-panel`, `border-border` and the rest already resolve through custom
+   properties, so a Ledger panel dropped in here arrives in Desk's world with no
+   variant prop threaded through it.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * Locked from the token studio (`/home-ideas/desk/studio`), preset "i like this": the
+ * Aubergine Lime palette, the Ledger Grotesk type trio, trim (4px) radius, glass
+ * surfaces, standard scroll motion. This is no longer one of six candidates being
+ * weighed — it is the selection. `desk-studio.tsx`'s bundled "Studio Glass" preset and
+ * `DEFAULT_SETTINGS` mirror these exact values so the editor's own baseline never drifts
+ * from what actually ships here.
+ */
+.desk {
+  --bg: #17151c;
+  --panel: #25212b;
+  --panel-2: #111016;
+  --raised: #302a38;
+  --border: #393240;
+  --border-2: #554b5e;
+  --text: #fff9f2;
+  --muted: #d8cbd6;
+  --muted-2: #ad9ca9;
+
+  /* Acid lime against charcoal-aubergine — a lit studio at night rather than a warm
+     room. It clears well past 8:1 on this ground, so — same as the palette it replaced —
+     it is usable as running text and not only as a fill. */
+  --accent: #b9f36b;
+  --accent-rgb: 185, 243, 107;
+  --on-accent: #172006;
+
+  --hot: #ff7f73;
+  --cool: #8cb8ff;
+  --green: #b9f36b;
+  --amber: #ffc35c;
+  --red: #ff788d;
+  --radius: 4px;
+
+  /**
+   * Three faces, three jobs — the studio preset is a trio, not the four-face system the
+   * candidate tournament shipped with.
+   *
+   * - display  Bricolage Grotesque. Carries the voice at poster size. Its wdth axis
+   *            narrows the headline as it grows, so the big line stays dense.
+   * - sans     Figtree. Prose, controls, and — new here — the emphasis word inside a
+   *            headline, which used to be a second, italic face. See `.desk-em`.
+   * - mono     DM Mono. Credits, costs, counts, resolutions, timestamps.
+   */
+  --font-display: "Bricolage Grotesque", "Figtree", system-ui, sans-serif;
+  --font-sans: "Figtree", system-ui, sans-serif;
+  --font-mono: "DM Mono", ui-monospace, "SF Mono", monospace;
+  --font-editorial: "Bricolage Grotesque", "Figtree", system-ui, sans-serif;
+}
+
+/* ── type roles ──────────────────────────────────────────────────────────── */
+
+.desk-display {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-variation-settings: "wdth" 92;
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+
+/* The one emphasis word. No second face any more — the studio preset is a three-face
+   trio, and Bricolage Grotesque's variable axes were only requested without `ital`, so a
+   browser-synthesised slant would fake it badly. The contrast instead comes from weight
+   (300 against the headline's 800, the widest step the family offers) and colour; a
+   grotesque set light reads as deliberately quieter, not as a typo. */
+.desk-em {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-variation-settings: "wdth" 100;
+  letter-spacing: -0.01em;
+  color: var(--accent);
+  padding-right: 0.05em;
+}
+
+/* Data. Never prose — costs, counts, resolutions, the credit balance. */
+.desk-data {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 0.78em;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.desk-kicker {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 11.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+/* ── the room ────────────────────────────────────────────────────────────── */
+
+/* The desk lamp. One warm pool from above-left, the only light in the room, so the
+   composer sits in it and the wall behind falls off into shadow. */
+.desk-lamp::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background: radial-gradient(
+    72% 54% at 44% 2%,
+    color-mix(in srgb, var(--accent) 13%, transparent),
+    color-mix(in srgb, var(--accent) 0%, transparent) 70%
+  );
+}
+
+/**
+ * The wall of output behind the desk.
+ *
+ * It is scoped to the hero section rather than the page root, which is what it used to
+ * be: `position: absolute; inset: 0` inside a root that grows to the full document meant
+ * the tile grid was stretched to document height, and every "picture" on the opening
+ * screen was a two-thousand-pixel vertical smear of one. An image product cannot open on
+ * images that no longer look like images.
+ */
+.desk-wall {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/**
+ * Out of focus, on purpose. The blur is not a filter effect for its own sake — it is the
+ * depth cue that makes the composer read as the near object and the wall as the far one,
+ * and it is what lets the tiles stay bright enough to be recognisably pictures while
+ * every word in front of them still clears contrast. Sharp tiles at this opacity put
+ * faces and hard edges directly behind body copy, which is what the first pass did.
+ *
+ * Scaled slightly past its box so the blur has material to sample at the edges instead of
+ * fading into the ground.
+ */
+/**
+ * Nearly sharp, and bright enough to read as work.
+ *
+ * The first pass blurred this to 2–3px at 0.42 opacity, which bought contrast by throwing
+ * away the only evidence on the opening screen that this product makes pictures. The
+ * legibility now comes from the composer and the headline carrying their *own* grounds
+ * rather than from erasing what is behind them, so the wall gets to be nearly in focus and
+ * roughly half again as bright. The remaining 0.8px is atmospheric only — enough to sit
+ * the wall behind the glass without reading as a gallery grid.
+ */
+.desk-wall-grid {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+  height: 118%;
+  padding-block: 10px;
+  filter: blur(1.4px) saturate(0.95);
+  transform: scale(1.03);
+}
+
+@media (min-width: 640px) {
+  .desk-wall-grid {
+    filter: blur(0.8px) saturate(1);
+  }
+}
+
+/* One marquee track. Its tile set is rendered twice by the component, back to back, so
+   a −50% translate always lands on a frame identical to the start — the loop point is
+   invisible without any JS timing to get right. `width: max-content` is load-bearing:
+   without it the flex row would shrink to its container instead of to its content, and
+   the −50% translate would stop meaning "one full tile set". */
+.desk-wall-row {
+  display: flex;
+  flex: 1;
+  gap: 10px;
+  width: max-content;
+  will-change: transform;
+}
+
+.desk-wall-row img {
+  width: 168px;
+  height: 100%;
+  flex-shrink: 0;
+  object-fit: cover;
+  border-radius: var(--radius);
+  opacity: 0.86;
+}
+
+@media (min-width: 640px) {
+  .desk-wall-row img {
+    width: 240px;
+  }
+}
+
+/* Four independent marquees rather than one mechanism — alternating direction and a
+   different `--row-duration` per row (set inline by the component) is what reads as a
+   bank of shelves rather than a single scrolling strip. Reduced motion drops the
+   animation entirely; the rows still sit full of tiles, just still. */
+@media (prefers-reduced-motion: no-preference) {
+  .desk-wall-row {
+    animation: desk-wall-scroll var(--row-duration, 80s) linear infinite;
+  }
+}
+
+@keyframes desk-wall-scroll {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+/* ── embers ──────────────────────────────────────────────────────────────
+   The room's one continuous ornament: motes of the accent colour rising slowly through
+   the lamp light, between the wall and the composer. A quiet studio at night earns this —
+   it is the one place in the product built to feel inhabited rather than operated. Two
+   sizes read as depth: many small sharp motes close to the glass, a few large soft ones
+   further back. Both are `aria-hidden`, `pointer-events: none`, and gated entirely behind
+   `prefers-reduced-motion`, so a visitor who has asked for less motion gets a still room,
+   not a slower one. */
+.desk-embers {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .desk-embers {
+    display: none;
+  }
+}
+
+.desk-ember {
+  position: absolute;
+  bottom: -8%;
+  border-radius: 999px;
+  background: var(--accent);
+  opacity: 0;
+  box-shadow: 0 0 8px 1px color-mix(in srgb, var(--accent) 65%, transparent);
+  animation: desk-ember-rise var(--duration, 20s) linear var(--delay, 0s) infinite;
+  will-change: transform, opacity;
+}
+
+.desk-ember--orb {
+  filter: blur(6px);
+  box-shadow: none;
+}
+
+@keyframes desk-ember-rise {
+  0% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0;
+  }
+  8% {
+    opacity: var(--peak, 0.6);
+  }
+  82% {
+    opacity: var(--peak, 0.6);
+  }
+  100% {
+    transform: translate3d(var(--drift, 18px), -92vh, 0);
+    opacity: 0;
+  }
+}
+
+/* The lamp keeps breathing after its one-time bloom — a slow, barely-there pulse rather
+   than a second entrance. */
+@media (prefers-reduced-motion: no-preference) {
+  .desk-lamp::before {
+    animation:
+      desk-lamp-in 900ms cubic-bezier(0.16, 1, 0.3, 1) both,
+      desk-lamp-breathe 8s ease-in-out 900ms infinite;
+  }
+}
+
+@keyframes desk-lamp-breathe {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.82;
+    transform: scale(1.035);
+  }
+}
+
+/* The lamp's falloff, now much shallower — it shades the wall rather than hiding it. */
+.desk-wall-scrim {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    68% 58% at 50% 44%,
+    color-mix(in srgb, var(--bg) 82%, transparent) 22%,
+    color-mix(in srgb, var(--bg) 62%, transparent) 55%,
+    color-mix(in srgb, var(--bg) 34%, transparent) 100%
+  );
+}
+
+@media (max-width: 639px) {
+  .desk-wall-scrim {
+    background:
+      radial-gradient(
+        80% 48% at 50% 38%,
+        color-mix(in srgb, var(--bg) 88%, transparent) 30%,
+        color-mix(in srgb, var(--bg) 70%, transparent) 100%
+      ),
+      color-mix(in srgb, var(--bg) 32%, transparent);
+  }
+}
+
+/**
+ * The lens the headline sits on.
+ *
+ * With the wall this bright, display type set straight onto it would fail contrast over
+ * the light tiles. Rather than dim the whole wall again, the text block carries a local
+ * darkening that fades out well before its own edges — the pool of lamplight, doing the
+ * job it was always supposed to do.
+ */
+.desk-pool {
+  position: relative;
+  isolation: isolate;
+}
+
+.desk-pool::before {
+  content: "";
+  position: absolute;
+  inset: -8% -12%;
+  z-index: -1;
+  pointer-events: none;
+  /* Every stop is the same hue, faded through `--bg` at 0% rather than the bare
+     `transparent` keyword — mixing a colour straight into `transparent` interpolates hue
+     and alpha together and leaves a visible seam partway through the fade, which is
+     exactly the hard edge this gradient exists to avoid. */
+  background: radial-gradient(
+    62% 66% at 46% 48%,
+    color-mix(in srgb, var(--bg) 97%, transparent) 0%,
+    color-mix(in srgb, var(--bg) 90%, transparent) 42%,
+    color-mix(in srgb, var(--bg) 62%, transparent) 70%,
+    color-mix(in srgb, var(--bg) 0%, transparent) 88%
+  );
+}
+
+/* The bottom edge of the room: the wall resolves into the ground so the hero does not
+   end on a hard horizontal cut across the tiles. Same-hue stops throughout — see the note
+   on `.desk-pool::before` above. */
+.desk-wall-foot {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 22%;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--bg) 0%, transparent),
+    var(--bg)
+  );
+}
+
+/* The top edge. The nav sits directly on the wall, and at this brightness a link can land
+   on a near-white tile — so the wall darkens under the bar and clears immediately below
+   it. Cheaper and less destructive than dimming the whole wall for one row of text.
+   Same-hue stops throughout, ending fully transparent rather than the bare keyword. */
+.desk-wall-head {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 190px;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--bg) 92%, transparent),
+    color-mix(in srgb, var(--bg) 60%, transparent) 45%,
+    color-mix(in srgb, var(--bg) 0%, transparent)
+  );
+}
+
+/* ── the composer ────────────────────────────────────────────────────────── */
+
+/**
+ * The composer, built the way a generation tool builds one: a single raised slab holding
+ * the line, the loaded asset, and every control that tool actually needs — nothing in a
+ * settings drawer somewhere else. Its real elevation (offset *and* blur) is what makes it
+ * the near object against the wall.
+ *
+ * It is nearly opaque rather than translucent. With the wall at full brightness a glassy
+ * panel would put tile edges directly under the typed line, and the point of the object is
+ * that what you write is the clearest thing on the screen.
+ */
+.desk-composer.desk-composer {
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--panel) 96%, transparent);
+  backdrop-filter: blur(20px) saturate(130%);
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.07) inset,
+    0 32px 80px -28px rgba(0, 0, 0, 0.9),
+    0 6px 18px -8px rgba(0, 0, 0, 0.65);
+  transition: box-shadow 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Fixed from tablet up — one tool's extra field (chat/rpg/story) must not change the
+   composer's footprint when a visitor switches tabs, because the aside beside it (visible
+   from `xl`) stretches to match this box exactly, and everything below both of them would
+   otherwise jump. The field itself (`flex-1 min-h-0` in the component) is what absorbs the
+   difference. Below this breakpoint the aside never renders, so the box is left to size
+   itself naturally instead of risking a cramped fit on the narrowest screens. */
+@media (min-width: 640px) {
+  .desk-composer.desk-composer {
+    display: flex;
+    flex-direction: column;
+    height: 346px;
+  }
+}
+
+.desk-composer:focus-within {
+  box-shadow:
+    0 0 0 2px var(--accent),
+    0 32px 80px -24px rgba(0, 0, 0, 0.94),
+    0 6px 18px -8px rgba(0, 0, 0, 0.65);
+}
+
+/* The control shelf along the bottom of the composer. These are the selected tool's real
+   parameters, read from the same modules the tool itself reads. */
+.desk-shelf {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+}
+
+.desk-pill.desk-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--border-2);
+  background: color-mix(in srgb, var(--raised) 62%, transparent);
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease;
+}
+
+.desk-pill.desk-pill:hover,
+.desk-pill.desk-pill[data-state="open"] {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--raised) 88%, transparent);
+}
+
+.desk-pill-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted-2);
+}
+
+/* Radix renders the menu in a portal, outside `.desk`, so the world's tokens have to
+   be restated on it or it inherits the app's near-black Ledger ground. */
+.desk-menu.desk-menu {
+  border-radius: var(--radius);
+  border-color: var(--border-2);
+  background: var(--panel);
+  padding: 4px;
+  font-family: var(--font-sans);
+}
+
+.desk-menu.desk-menu [role="option"] {
+  border-radius: max(2px, calc(var(--radius) * 0.75));
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  font-weight: 500;
+  padding-block: 7px;
+}
+
+/* The side panel in the split and console layouts. */
+.desk-aside.desk-aside {
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--panel) 88%, transparent);
+  backdrop-filter: blur(18px) saturate(130%);
+  box-shadow: 0 28px 70px -30px rgba(0, 0, 0, 0.85);
+  overflow: hidden;
+}
+
+/* The send button's label changes when the tool tab changes. Swapping it instantly makes
+   the tabs look like navigation; crossfading it makes the mechanism — one line, five
+   destinations — the thing you actually notice. */
+@keyframes desk-relabel {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 5px, 0);
+  }
+}
+
+.desk-relabel {
+  display: inline-block;
+  animation: desk-relabel 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ── the tool switcher ───────────────────────────────────────────────────── */
+
+/* Copied from `/home`'s `.hub-toolbar`/`.hub-tool` (hub.css) — same properties, desk-
+   scoped names. `border` and `border-radius: 999px` are written as literal declarations
+   here rather than via Tailwind's `border` + `rounded-full` classes: that utility pairing
+   is what silently produced a rounded rectangle instead of a pill (see the comment on
+   `ToolTabs` in desk.tsx) — the global `.border { border-radius: var(--radius) }` rule in
+   globals.css wins the cascade over `rounded-full` on any element carrying both classes. */
+.desk-toolbar {
+  position: relative;
+  z-index: 40;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  border: 1px solid var(--border-2);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--panel) 82%, transparent);
+  padding: 5px;
+  backdrop-filter: blur(10px) saturate(130%);
+}
+
+.desk-tool {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.desk-tool:hover {
+  color: var(--text);
+}
+
+.desk-tool[data-active="true"] {
+  background: var(--accent);
+  color: var(--on-accent);
+  box-shadow: 0 10px 24px -10px color-mix(in srgb, var(--accent) 60%, transparent);
+}
+
+/* ── page rhythm ─────────────────────────────────────────────────────────── */
+
+.desk-section {
+  position: relative;
+  z-index: 10;
+  padding: clamp(56px, 8vw, 104px) clamp(20px, 5vw, 64px);
+}
+
+.desk-section + .desk-section {
+  border-top: 1px solid var(--border);
+}
+
+.desk-recessed {
+  background: var(--panel-2);
+}
+
+/* Wide, like `/` is. Evidence on this page is pictures, and pictures inset into a narrow
+   column read as a brochure — the same reason `/` sits in WIDE_ROUTES. */
+.desk-inner {
+  margin-inline: auto;
+  width: 100%;
+  max-width: 1440px;
+}
+
+.desk-inner-wide {
+  margin-inline: auto;
+  width: 100%;
+  max-width: 1680px;
+}
+
+/* Sticky chrome. Transparent over the lamp, and only once the hero is behind you does it
+   acquire a ground — so the first viewport keeps its single pool of light and the bar
+   still stays legible over the specimen band further down. */
+.desk-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  transition:
+    background-color 260ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 260ms cubic-bezier(0.16, 1, 0.3, 1),
+    backdrop-filter 260ms cubic-bezier(0.16, 1, 0.3, 1);
+  border-bottom: 1px solid transparent;
+}
+
+.desk-topbar[data-stuck="true"] {
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  border-bottom-color: var(--border);
+  backdrop-filter: blur(14px) saturate(140%);
+}
+
+/* The one thing in the topbar that should look unmissable — everything else up here is
+   utility (credits, dev tooling) or a quiet shortcut; this is the actual destination. */
+.desk-cta.desk-cta {
+  box-shadow: 0 10px 26px -10px color-mix(in srgb, var(--accent) 55%, transparent);
+  transition:
+    transform 160ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.desk-cta.desk-cta:hover {
+  box-shadow: 0 14px 32px -10px color-mix(in srgb, var(--accent) 70%, transparent);
+}
+
+/* ── Ledger components, in Desk's world ─────────────────────────────────── */
+
+/**
+ * Ledger is a zero-radius system and Desk is a 14px one. Rather than fork the components,
+ * the wrapper rounds them: `.border` is Tailwind's all-sides border, which is exactly the
+ * set of Ledger primitives that are objects (panels, tiles, chips) and never the set that
+ * are rules (`border-t`, `border-r`), so the ruled subdivisions Ledger uses to avoid
+ * nested panels stay flat and only the outer objects soften.
+ */
+.desk-ledger .border {
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+/* Ledger names its regions for the codebase — `home.spine`, `home.terms`. That is an
+   address for whoever built it, and it is the specific failure this whole review surface
+   exists to fix, so in Desk each panel gets a human heading above it and the address is
+   demoted to what it actually is: a small data label. */
+.desk-ledger .font-mono {
+  font-family: var(--font-mono);
+  letter-spacing: 0.03em;
+}
+
+/**
+ * Ledger prints a codebase address above each region — `home.video-ideas` over "Start with
+ * an idea". Where the component supplies a real heading directly beneath it, the address
+ * is a decorative eyebrow whose text tells a visitor nothing, so Desk drops it and keeps
+ * the heading. The addresses that sit *inside* a panel head are left alone: those are
+ * labels on an instrument and the panel would be an empty bar without them.
+ */
+.desk-ledger p.font-mono.uppercase.text-accent {
+  display: none;
+}
+
+/* Ledger's smallest metadata sizes were set against a near-black ground. On this warmer,
+   lighter ground they need a step up to hold. */
+.desk-ledger .text-\[10px\],
+.desk-ledger .text-\[9\.5px\],
+.desk-ledger .text-\[10\.5px\] {
+  font-size: 11.5px;
+  line-height: 1.55;
+}
+
+.desk-ledger .text-\[11px\],
+.desk-ledger .text-\[11\.5px\] {
+  font-size: 12px;
+}
+
+/* ── motion: the lamp moves ─────────────────────────────────────────────── */
+
+/**
+ * One authored idea, not a reveal on every section.
+ *
+ * The room switches on at load — the lamp blooms and the composer settles under it — and
+ * then the light *travels*: as the page scrolls, the sections beneath rise into it while
+ * the specimen band drifts against the scroll, so the wall of work reads as something you
+ * are moving past rather than something looping at you. The band deliberately does not
+ * marquee; a strip scrolling on its own is decoration pretending to be status, and it
+ * stops meaning anything the moment the visitor stops.
+ *
+ * All of it is scroll-driven and `@supports`-gated: the default state is the finished
+ * state, so a browser without scroll timelines gets the page fully composed rather than
+ * a blank one waiting for permission.
+ */
+@keyframes desk-lamp-in {
+  from {
+    opacity: 0;
+    transform: scale(1.04);
+  }
+}
+
+/* The static bloom-in plus a standing breathe layer — declared once, together, in
+   `.desk-embers`' block above the wall section, so there is exactly one rule
+   authoring `.desk-lamp::before`'s animation rather than two competing on cascade
+   order. */
+
+@keyframes desk-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 30px, 0);
+    filter: blur(7px);
+  }
+}
+
+/* A light per-item cascade for grid-of-cards sections (Steps, the tool doors) — each
+   child staggers off the last via `--stagger-i`, set inline per item. Same rise, same
+   curve as `desk-rise`, just offset in the timeline rather than in real time so it
+   still resolves correctly regardless of scroll speed. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .desk-stagger {
+      animation: desk-rise linear both;
+      animation-timeline: view();
+      animation-range: entry calc(2% + var(--stagger-i, 0) * 4%) cover
+        calc(20% + var(--stagger-i, 0) * 4%);
+    }
+  }
+}
+
+@keyframes desk-drift {
+  from {
+    transform: translate3d(3.5%, 0, 0);
+  }
+  to {
+    transform: translate3d(-3.5%, 0, 0);
+  }
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .desk-lift {
+      animation: desk-rise linear both;
+      animation-timeline: view();
+      animation-range: entry 2% cover 24%;
+    }
+
+    /* The band is wider than its column so the drift never exposes an edge. */
+    .desk-band > section > div:not([class*="sr-only"]) {
+      width: 108%;
+      margin-left: -4%;
+      animation: desk-drift linear both;
+      animation-timeline: view();
+      animation-range: cover;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .desk-lamp::before,
+  .desk-relabel {
+    animation: none;
+  }
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   5 · BILL — the playbill
+   Drenched ink, the way Hermes drenches its page, with a true Didone at poster
+   scale. The loaded model is a billed performer and the five tools are the
+   season. No photographic hero at all: the type is the image, which makes this
+   the highest-contrast and cheapest-to-render of the five.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+.idea-bill {
+  --bg: #101c3a;
+  --panel: #16264c;
+  --panel-2: #0d1830;
+  --raised: #1e3160;
+  --border: #2b447d;
+  --border-2: #3f5ea3;
+  --text: #fdf6e6;
+  --muted: #dcc9a8;
+  --muted-2: #bfa87f;
+  --accent: #f0c25e;
+  --accent-rgb: 240, 194, 94;
+  --on-accent: #1a1102;
+  --hot: #e8785c;
+  --cool: #8fbce8;
+  --green: #7fce9a;
+  --amber: #f0c25e;
+  --red: #e8788a;
+  --radius: 0px;
+
+  --font-display: "Bodoni Moda", Georgia, serif;
+  --font-sans: "Archivo", system-ui, sans-serif;
+  --font-mono: "Archivo", system-ui, sans-serif;
+}
+
+/* Letterpress rules. A playbill's hierarchy is carried entirely by rule weight — hair,
+   medium, and fat — so these three are the world's whole component grammar. */
+.idea-bill-rule-hair {
+  border-top: 1px solid var(--border-2);
+}
+
+.idea-bill-rule-med {
+  border-top: 3px solid var(--muted-2);
+}
+
+.idea-bill-rule-fat {
+  border-top: 7px solid var(--accent);
+}
+
+/* The bill's own paper tooth: the ink field should not be a flat digital plane, and this
+   is cheap — one repeating gradient, no image request.
+ *
+ * The period is 7px, not 3px. At a 3px period the stripe sat at the same visual frequency
+ * as Bodoni Moda's hairline serifs at display size, and the two interfered: the hairlines
+ * broke into dashes and read as a ghosted second copy of every letter. Widening the period
+ * well clear of the hairline weight, and halving the amplitude, leaves tone instead of
+ * lines. A Didone earns its display size from those hairlines — the texture has to stay out
+ * of their way. */
+.idea-bill-paper {
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      rgba(253, 246, 230, 0.016) 0px,
+      rgba(253, 246, 230, 0.016) 2px,
+      transparent 2px,
+      transparent 7px
+    );
+}
+
+/* A billed line underlines on approach — the way a name is ruled on a printed bill. */
+.idea-bill-billed {
+  background-image: linear-gradient(var(--accent), var(--accent));
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  background-size: 0% 3px;
+  transition: background-size 320ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.idea-bill-billed:hover,
+.idea-bill-billed:focus-visible {
+  background-size: 100% 3px;
+}
+
+.idea-bill-catalog {
+  margin-top: 72px;
+  border-top: 3px solid var(--muted-2);
+  padding-top: 36px;
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   Shared full-page furniture
+   The candidate pages arrange these pieces differently, but none is allowed to
+   omit the actual product spine just because its hero is expressive.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+.idea-candidate-nav {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  min-height: 68px;
+  align-items: center;
+  gap: 24px;
+  border-bottom: 1px solid var(--border);
+  padding: 14px clamp(20px, 4vw, 56px);
+}
+
+.idea-wordmark {
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.idea-tool-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.idea-tool-nav a,
+.idea-credit-link {
+  padding: 8px 10px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.idea-tool-nav a:hover,
+.idea-credit-link:hover {
+  color: var(--text);
+}
+
+.idea-nav-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.idea-nav-primary {
+  background: var(--accent);
+  color: var(--on-accent);
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.idea-palette {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.idea-palette-label {
+  color: var(--muted-2);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.idea-palette-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.idea-palette-option {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--border-2);
+  border-radius: max(2px, calc(var(--radius) / 2));
+  padding: 6px 8px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  transition:
+    background-color 160ms ease-out,
+    color 160ms ease-out,
+    border-color 160ms ease-out;
+}
+
+.idea-switcher-tabs {
+  mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 28px), transparent);
+}
+
+.idea-palette-option:hover {
+  color: var(--text);
+  border-color: var(--muted-2);
+}
+
+.idea-palette-option[data-active="true"] {
+  border-color: var(--accent);
+  background: var(--raised);
+  color: var(--text);
+}
+
+.idea-palette-swatches {
+  display: flex;
+  width: 34px;
+  height: 13px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--text) 22%, transparent);
+}
+
+.idea-palette-swatches span {
+  flex: 1;
+}
+
+.idea-section-copy {
+  max-width: 620px;
+}
+
+.idea-section-copy h2 {
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: clamp(1.65rem, 3.5vw, 2.5rem);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+}
+
+.idea-section-copy p {
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.idea-model-list {
+  margin-top: 26px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.idea-model-card {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 58px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel);
+  padding: 8px;
+  color: var(--text);
+  text-align: left;
+  transition:
+    transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 180ms ease-out,
+    background-color 180ms ease-out;
+}
+
+.idea-model-card:hover {
+  transform: translate3d(0, -2px, 0);
+  border-color: var(--border-2);
+}
+
+.idea-model-card[data-selected="true"] {
+  border-color: var(--accent);
+  background: var(--raised);
+}
+
+.idea-model-card img {
+  width: 58px;
+  height: 58px;
+  object-fit: cover;
+  border-radius: max(2px, calc(var(--radius) * 0.65));
+}
+
+.idea-model-copy {
+  display: block;
+  min-width: 0;
+}
+
+.idea-model-copy strong,
+.idea-model-copy span {
+  display: block;
+}
+
+.idea-model-copy strong {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.idea-model-copy span,
+.idea-model-cost {
+  margin-top: 4px;
+  color: var(--muted-2);
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.idea-lora-list {
+  margin-top: 26px;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.idea-lora-card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel);
+  color: var(--text);
+  text-align: left;
+  transition:
+    transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 180ms ease-out;
+}
+
+.idea-lora-card:hover {
+  transform: translate3d(0, -3px, 0);
+  border-color: var(--border-2);
+}
+
+.idea-lora-card[data-selected="true"] {
+  border-color: var(--accent);
+  box-shadow: inset 0 -3px 0 var(--accent);
+}
+
+.idea-lora-image {
+  position: relative;
+  display: block;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  background: var(--panel-2);
+}
+
+.idea-lora-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.idea-lora-image > span {
+  position: absolute;
+  right: 7px;
+  bottom: 7px;
+  background: var(--accent);
+  color: var(--on-accent);
+  padding: 4px 6px;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.idea-lora-copy {
+  display: block;
+  padding: 11px;
+}
+
+.idea-lora-copy strong,
+.idea-lora-copy span {
+  display: block;
+}
+
+.idea-lora-copy strong {
+  overflow: hidden;
+  font-size: 13.5px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.idea-lora-copy span {
+  display: -webkit-box;
+  margin-top: 6px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 11.5px;
+  line-height: 1.45;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.idea-see-all {
+  display: inline-block;
+  margin-top: 18px;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.idea-tool-list {
+  margin-top: 26px;
+  border-top: 1px solid var(--border-2);
+}
+
+.idea-tool-card {
+  display: grid;
+  grid-template-columns: minmax(100px, 0.7fr) minmax(220px, 1.8fr) minmax(120px, auto) auto;
+  align-items: baseline;
+  gap: 20px;
+  border-bottom: 1px solid var(--border-2);
+  padding: 20px 0;
+  color: var(--text);
+}
+
+.idea-tool-card:hover .idea-tool-action {
+  color: var(--accent);
+  transform: translate3d(3px, 0, 0);
+}
+
+.idea-tool-name {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.idea-tool-blurb {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.idea-tool-action,
+.idea-tool-cost {
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.idea-tool-action {
+  transition:
+    color 160ms ease-out,
+    transform 160ms ease-out;
+}
+
+.idea-tool-cost {
+  color: var(--muted-2);
+  text-align: right;
+}
+
+.idea-product-terms {
+  border-top: 1px solid var(--border);
+  padding: 40px clamp(20px, 5vw, 72px) 84px;
+}
+
+.idea-terms-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 34px;
+}
+
+.idea-terms-grid strong {
+  color: var(--text);
+  font-size: 14px;
+}
+
+.idea-terms-grid p {
+  margin-top: 7px;
+  max-width: 44ch;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.idea-terms-disclosure {
+  margin-top: 26px;
+  max-width: 78ch;
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   DESK DESCENDANTS
+   ─────────────────────────────────────────────────────────────────────────── */
+
+.idea-workbench {
+  --bg: #111418;
+  --panel: #1a1f25;
+  --panel-2: #0d1013;
+  --raised: #242b33;
+  --border: #303841;
+  --border-2: #495563;
+  --text: #f4f7f8;
+  --muted: #c1cad0;
+  --muted-2: #96a4ad;
+  --accent: #f3b43f;
+  --on-accent: #191105;
+  --hot: #ff745c;
+  --cool: #64b7ff;
+  --green: #66d39a;
+  --amber: #f3b43f;
+  --red: #ff7684;
+  --radius: 8px;
+  --font-display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --font-sans: "Public Sans", system-ui, sans-serif;
+  --font-mono: "Public Sans", system-ui, sans-serif;
+}
+
+.idea-workbench-board {
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--border) 32%, transparent) 1px, transparent 1px)
+      0 0 / 36px 36px,
+    linear-gradient(color-mix(in srgb, var(--border) 32%, transparent) 1px, transparent 1px)
+      0 0 / 36px 36px,
+    var(--bg);
+}
+
+.idea-workbench-hero {
+  display: grid;
+  min-height: 610px;
+  grid-template-columns: minmax(0, 0.8fr) minmax(460px, 1.2fr);
+  align-items: stretch;
+  border-bottom: 1px solid var(--border);
+}
+
+.idea-workbench-copy {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(48px, 8vw, 108px) clamp(24px, 6vw, 84px);
+}
+
+.idea-workbench-copy h1 {
+  max-width: 10ch;
+  font-family: var(--font-display);
+  font-size: clamp(3.8rem, 8vw, 6rem);
+  font-weight: 900;
+  line-height: 0.84;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+
+.idea-workbench-copy p {
+  margin-top: 26px;
+  max-width: 44ch;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+.idea-workbench-console {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-left: 1px solid var(--border);
+  background: var(--panel-2);
+  padding: clamp(24px, 5vw, 64px);
+}
+
+.idea-workbench-console textarea {
+  min-height: 148px;
+  width: 100%;
+  resize: vertical;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius);
+  background: var(--panel);
+  padding: 20px;
+  color: var(--text);
+  font-size: 18px;
+  line-height: 1.55;
+}
+
+.idea-workbench-section {
+  padding: clamp(54px, 8vw, 100px) clamp(20px, 5vw, 72px);
+  border-bottom: 1px solid var(--border);
+}
+
+/* Bench modules read as equipment trays rather than the generic portrait contact sheet. */
+.idea-workbench .idea-lora-list {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.idea-workbench .idea-lora-card {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  align-items: stretch;
+}
+
+.idea-workbench .idea-lora-image {
+  aspect-ratio: auto;
+  min-height: 142px;
+}
+
+.idea-workbench .idea-lora-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
+  border-left: 1px solid var(--border);
+}
+
+.idea-studio {
+  --bg: #17151c;
+  --panel: #25212b;
+  --panel-2: #111016;
+  --raised: #302a38;
+  --border: #393240;
+  --border-2: #554b5e;
+  --text: #fff9f2;
+  --muted: #d8cbd6;
+  --muted-2: #ad9ca9;
+  --accent: #b9f36b;
+  --on-accent: #172006;
+  --hot: #ff7f73;
+  --cool: #8cb8ff;
+  --green: #b9f36b;
+  --amber: #ffc35c;
+  --red: #ff788d;
+  --radius: 16px;
+  --font-display: "Figtree", system-ui, sans-serif;
+  --font-sans: "Figtree", system-ui, sans-serif;
+  --font-mono: "Figtree", system-ui, sans-serif;
+}
+
+.idea-studio-hero {
+  position: relative;
+  display: grid;
+  min-height: 720px;
+  grid-template-columns: minmax(0, 1.05fr) minmax(420px, 0.95fr);
+  overflow: hidden;
+  border-bottom: 1px solid var(--border);
+}
+
+.idea-studio-media {
+  min-height: 540px;
+}
+
+.idea-studio-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.idea-studio-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: var(--panel-2);
+  padding: clamp(36px, 7vw, 96px);
+}
+
+.idea-studio-panel h1 {
+  max-width: 9ch;
+  font-family: var(--font-display);
+  font-size: clamp(3rem, 6vw, 5.6rem);
+  font-weight: 900;
+  line-height: 0.92;
+  letter-spacing: -0.035em;
+}
+
+.idea-studio-panel p {
+  margin-top: 24px;
+  max-width: 42ch;
+  color: var(--muted);
+  font-size: 17px;
+  line-height: 1.65;
+}
+
+.idea-studio-composer {
+  margin-top: 34px;
+  border-radius: var(--radius);
+  background: var(--panel);
+  padding: 10px;
+  box-shadow: 0 28px 70px -30px rgba(0, 0, 0, 0.9);
+}
+
+.idea-studio-composer textarea {
+  min-height: 104px;
+  width: 100%;
+  resize: none;
+  background: transparent;
+  padding: 12px;
+  color: var(--text);
+  font-size: 16px;
+}
+
+.idea-studio-section {
+  padding: clamp(60px, 9vw, 112px) clamp(20px, 6vw, 88px);
+}
+
+.idea-studio-section:nth-of-type(even) {
+  background: var(--panel-2);
+}
+
+/* A studio contact sheet has one selected hero frame, not six equal catalogue cards. */
+.idea-studio .idea-lora-list {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-flow: dense;
+}
+
+.idea-studio .idea-lora-card:first-child {
+  grid-column: span 2;
+  grid-row: span 2;
+}
+
+.idea-studio .idea-lora-card:first-child .idea-lora-image {
+  aspect-ratio: 4 / 4.55;
+}
+
+.idea-studio .idea-lora-card:last-child {
+  grid-column: span 2;
+}
+
+.idea-studio .idea-lora-card:last-child .idea-lora-image {
+  aspect-ratio: 2 / 1;
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   BILL DESCENDANTS
+   ─────────────────────────────────────────────────────────────────────────── */
+
+.idea-poster {
+  --bg: #441226;
+  --panel: #571831;
+  --panel-2: #320c1b;
+  --raised: #681d3a;
+  --border: #8a3150;
+  --border-2: #b34869;
+  --text: #fff8e8;
+  --muted: #f1cfd2;
+  --muted-2: #dba7ad;
+  --accent: #ffe45e;
+  --on-accent: #291c00;
+  --hot: #ff805e;
+  --cool: #8ed8ff;
+  --green: #8fe497;
+  --amber: #ffe45e;
+  --red: #ff8791;
+  --radius: 0px;
+  --font-display: "Archivo Black", "Archivo", sans-serif;
+  --font-sans: "Archivo", system-ui, sans-serif;
+  --font-mono: "Archivo", system-ui, sans-serif;
+}
+
+.idea-poster-hero {
+  position: relative;
+  min-height: 720px;
+  overflow: hidden;
+  border-bottom: 12px solid var(--accent);
+  padding: clamp(28px, 5vw, 72px);
+}
+
+.idea-poster-hero h1 {
+  position: relative;
+  z-index: 2;
+  max-width: 9ch;
+  font-family: var(--font-display);
+  font-size: clamp(4.1rem, 12vw, 6rem);
+  font-weight: 900;
+  line-height: 0.79;
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+}
+
+.idea-poster-portrait {
+  position: absolute;
+  right: clamp(18px, 7vw, 96px);
+  bottom: 0;
+  width: min(47vw, 610px);
+  height: 92%;
+  object-fit: cover;
+  filter: grayscale(1) contrast(1.2);
+  mix-blend-mode: screen;
+}
+
+.idea-poster-manifesto {
+  position: relative;
+  z-index: 3;
+  margin-top: 40px;
+  max-width: 36ch;
+  background: var(--accent);
+  color: var(--on-accent);
+  padding: 16px;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.idea-poster-section {
+  border-bottom: 4px solid var(--border-2);
+  padding: clamp(52px, 8vw, 96px) clamp(20px, 5vw, 72px);
+}
+
+.idea-poster .idea-model-card,
+.idea-poster .idea-lora-card {
+  border-width: 2px;
+}
+
+.idea-poster .idea-tool-name {
+  text-transform: uppercase;
+}
+
+/* Tour billing carries five vertical dates rather than falling back to the shared list. */
+.idea-poster .idea-tool-list {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  border-top: 5px solid var(--accent);
+}
+
+.idea-poster .idea-tool-card {
+  display: flex;
+  min-height: 260px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  border-right: 2px solid var(--border-2);
+  border-bottom: 5px solid var(--accent);
+  padding: 24px 18px;
+}
+
+.idea-poster .idea-tool-card:last-child {
+  border-right: 0;
+}
+
+.idea-poster .idea-tool-action {
+  margin-top: auto;
+}
+
+.idea-poster .idea-tool-cost {
+  text-align: left;
+}
+
+.idea-program {
+  --bg: #14251f;
+  --panel: #1b3029;
+  --panel-2: #0e1c17;
+  --raised: #254138;
+  --border: #355b4e;
+  --border-2: #56816f;
+  --text: #fff8e8;
+  --muted: #d9d4bd;
+  --muted-2: #b7b39e;
+  --accent: #efb55f;
+  --on-accent: #261701;
+  --hot: #e57c64;
+  --cool: #83b9e8;
+  --green: #8bc993;
+  --amber: #efb55f;
+  --red: #e67f8a;
+  --radius: 2px;
+  --font-display: "DM Serif Display", Georgia, serif;
+  --font-sans: "Public Sans", system-ui, sans-serif;
+  --font-mono: "Public Sans", system-ui, sans-serif;
+}
+
+.idea-program-mast {
+  border-bottom: 1px solid var(--border-2);
+  padding: 20px clamp(20px, 5vw, 72px);
+}
+
+.idea-program-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(420px, 1.1fr);
+  min-height: 650px;
+  border-bottom: 1px solid var(--border-2);
+}
+
+.idea-program-copy {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: clamp(40px, 7vw, 96px) clamp(20px, 5vw, 72px);
+}
+
+.idea-program-copy h1 {
+  max-width: 9ch;
+  font-family: var(--font-display);
+  font-size: clamp(3.2rem, 7vw, 6rem);
+  font-weight: 400;
+  line-height: 0.92;
+  letter-spacing: -0.035em;
+}
+
+.idea-program-copy p {
+  margin-top: 22px;
+  max-width: 42ch;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+.idea-program-cast {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-left: 1px solid var(--border-2);
+}
+
+.idea-program-cast img {
+  width: 100%;
+  height: 100%;
+  min-height: 260px;
+  object-fit: cover;
+  filter: saturate(0.72) contrast(1.05);
+}
+
+.idea-program-section {
+  padding: clamp(54px, 8vw, 96px) clamp(20px, 5vw, 72px);
+  border-bottom: 1px solid var(--border-2);
+}
+
+.idea-program .idea-tool-card {
+  grid-template-columns: minmax(140px, 0.7fr) minmax(260px, 1.7fr) minmax(120px, auto) auto;
+}
+
+/* The production-house chooser is set like a programme directory. */
+.idea-program .idea-model-list {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0;
+  border-top: 1px solid var(--border-2);
+  border-left: 1px solid var(--border-2);
+}
+
+.idea-program .idea-model-card {
+  display: flex;
+  min-height: 184px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 0;
+  border-left: 0;
+}
+
+.idea-program .idea-model-card img {
+  width: 100%;
+  height: 82px;
+}
+
+.idea-program .idea-model-cost {
+  margin-top: auto;
+}
+
+@media (max-width: 980px) {
+  .idea-tool-nav {
+    display: none;
+  }
+
+  .idea-model-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .idea-lora-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .idea-workbench .idea-lora-list,
+  .idea-studio .idea-lora-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .idea-studio .idea-lora-card:first-child,
+  .idea-studio .idea-lora-card:last-child {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .idea-studio .idea-lora-card:first-child .idea-lora-image,
+  .idea-studio .idea-lora-card:last-child .idea-lora-image {
+    aspect-ratio: 4 / 5;
+  }
+
+  .idea-poster .idea-tool-list {
+    display: block;
+  }
+
+  .idea-poster .idea-tool-card {
+    min-height: 0;
+    border-right: 0;
+    border-bottom-width: 2px;
+  }
+
+  .idea-program .idea-model-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .idea-workbench-hero,
+  .idea-studio-hero,
+  .idea-program-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .idea-workbench-console,
+  .idea-program-cast {
+    border-left: 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .idea-studio-media {
+    max-height: 520px;
+  }
+}
+
+@media (max-width: 640px) {
+  .idea-candidate-nav {
+    min-height: 60px;
+    gap: 12px;
+    padding: 10px 16px;
+  }
+
+  .idea-credit-link {
+    display: none;
+  }
+
+  .idea-nav-primary {
+    padding: 9px 11px;
+    font-size: 12px;
+  }
+
+  .idea-palette {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .idea-model-list {
+    grid-template-columns: 1fr;
+  }
+
+  .idea-lora-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .idea-workbench .idea-lora-card {
+    display: block;
+  }
+
+  .idea-workbench .idea-lora-image {
+    aspect-ratio: 4 / 5;
+    min-height: 0;
+  }
+
+  .idea-tool-card,
+  .idea-program .idea-tool-card {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px 14px;
+  }
+
+  .idea-tool-blurb {
+    grid-column: 1 / -1;
+  }
+
+  .idea-tool-action {
+    grid-column: 1;
+  }
+
+  .idea-tool-cost {
+    grid-column: 2;
+  }
+
+  .idea-terms-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .idea-workbench-hero {
+    min-height: auto;
+  }
+
+  .idea-workbench-copy {
+    padding-top: 72px;
+    padding-bottom: 56px;
+  }
+
+  .idea-studio-hero {
+    min-height: auto;
+  }
+
+  .idea-studio-media {
+    min-height: 390px;
+    order: 2;
+  }
+
+  .idea-poster-hero {
+    min-height: 660px;
+  }
+
+  .idea-poster-hero h1 {
+    max-width: 100%;
+    font-size: clamp(2.7rem, 13.5vw, 3.1rem);
+    overflow-wrap: anywhere;
+  }
+
+  .idea-poster-portrait {
+    right: -18%;
+    width: 82vw;
+    opacity: 0.66;
+  }
+
+  .idea-program-cast {
+    min-height: 0;
+  }
+
+  .idea-program-cast img {
+    height: auto;
+    min-height: 0;
+    aspect-ratio: 1;
+  }
+
+  .idea-program .idea-model-list {
+    grid-template-columns: 1fr;
+    border-left: 0;
+  }
+
+  .idea-program .idea-model-card {
+    display: grid;
+    min-height: 0;
+    grid-template-columns: 58px minmax(0, 1fr) auto;
+    align-items: center;
+  }
+
+  .idea-program .idea-model-card img {
+    width: 58px;
+    height: 58px;
+  }
+}

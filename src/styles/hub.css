@@ -1,0 +1,1490 @@
+/* ───────────────────────────────────────────────────────────────────────────
+   THE HUB — `/home`
+
+   THESIS: the tools stop being destinations you navigate *to* and become things you
+   reach *from* one place. Before this, a visitor landed on `/` and had to already know
+   whether they wanted image, video, chat, RPG or story; the catalogue that gives all
+   five their subject sat one click sideways on `/browse`, where most people never went.
+   The hub inverts that. You arrive, you see what you loaded, you see what other people
+   made with it, and every tool is one pill away — with the catalogue folded in as a band
+   rather than exiled to its own page.
+
+   OWN-WORLD: this is Desk, so nothing here re-declares a colour, a face or a radius.
+   Every rule below is layout and behaviour only, resolving through the `:root` tokens in
+   globals.css. Where a surface is needed the file reaches for the primitives Desk already
+   owns — `.desk-pill`, `.desk-menu`, `.desk-cta`, `.desk-topbar`, `.desk-data`.
+
+   LAYOUT: a permanent left rail and a scrolling column. The rail is the only piece of
+   chrome that is genuinely new; the column is Desk's section rhythm with content bands.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* The mobile bar's rendered height, minus any home-indicator inset — both the bar and
+     the column that has to clear it read this one number. See `.hub-bottom-nav`. */
+  --hub-bottom-nav-h: 64px;
+}
+
+.hub-shell {
+  display: flex;
+  min-height: 100dvh;
+  align-items: flex-start;
+}
+
+/* ── the rail ───────────────────────────────────────────────────────────── */
+
+/**
+ * Two widths, one component. Expanded it is a labelled list; collapsed it is an icon
+ * strip with the label *beneath* each icon rather than hidden behind a tooltip — a
+ * tooltip makes you hover to find out where you are, which is the opposite of what a
+ * permanent rail is for.
+ *
+ * Below `lg` it leaves the flow entirely and becomes an off-canvas drawer, because at
+ * that width 236px of rail is a third of the screen.
+ */
+.hub-sidebar {
+  position: fixed;
+  inset-block: 0;
+  left: 0;
+  /* Above `.hub-bottom-nav` (60) — an open drawer is the topmost nav surface, not a
+     second one competing with the bar underneath it. */
+  z-index: 62;
+  display: flex;
+  width: 236px;
+  flex-direction: column;
+  border-right: 1px solid var(--border);
+  background: var(--panel-2);
+  transform: translate3d(-100%, 0, 0);
+  transition: transform 240ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hub-sidebar[data-open="true"] {
+  transform: translate3d(0, 0, 0);
+}
+
+.hub-sidebar-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 61;
+  background: rgba(0, 0, 0, 0.6);
+  animation: hub-fade-in 180ms ease both;
+}
+
+@media (min-width: 1024px) {
+  .hub-sidebar {
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    flex-shrink: 0;
+    transform: none;
+  }
+
+  .hub-sidebar[data-collapsed="true"] {
+    width: 76px;
+  }
+
+  .hub-sidebar-scrim {
+    display: none;
+  }
+}
+
+.hub-sidebar-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px 10px;
+}
+
+.hub-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--muted);
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.hub-nav-item:hover {
+  background: color-mix(in srgb, var(--raised) 55%, transparent);
+  color: var(--text);
+}
+
+.hub-nav-item.is-active {
+  background: var(--raised);
+  color: var(--accent);
+}
+
+/* Collapsed, the row stacks and the label shrinks to a caption. The icon keeps its
+   position so the strip reads as a column of targets rather than a column of words. */
+.hub-sidebar[data-collapsed="true"] .hub-nav-item {
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 4px;
+  font-size: 10.5px;
+  font-weight: 500;
+}
+
+.hub-sidebar[data-collapsed="true"] .hub-group-label,
+.hub-sidebar[data-collapsed="true"] .hub-collapse-only-hide {
+  display: none;
+}
+
+.hub-group-label {
+  padding: 16px 10px 6px;
+}
+
+/* ── the CREATE tile grid ───────────────────────────────────────────────── */
+
+.hub-create-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 0 10px;
+}
+
+.hub-create-tile {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--raised) 30%, transparent);
+  padding: 8px 9px;
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--muted);
+  text-decoration: none;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.hub-create-tile:hover {
+  border-color: var(--hue, var(--border-2));
+  background: color-mix(in srgb, var(--raised) 55%, transparent);
+  color: var(--text);
+}
+
+.hub-create-tile.is-active {
+  border-color: var(--hue, var(--accent));
+  background: color-mix(in srgb, var(--hue, var(--accent)) 10%, var(--raised));
+  color: var(--text);
+}
+
+/* Flat and square, not a filled colour chip — the tile's own border already carries the
+   tool's hue on hover/active, so the icon just has to read clearly against it rather than
+   compete with a saturated badge behind it. */
+.hub-create-tile-icon {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  color: var(--muted-2);
+  transition: color 160ms ease;
+}
+
+.hub-create-tile:hover .hub-create-tile-icon,
+.hub-create-tile.is-active .hub-create-tile-icon {
+  color: var(--hue, var(--accent));
+}
+
+/* ── the scrolling column ───────────────────────────────────────────────── */
+
+.hub-main {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  /* Clears the fixed `.hub-bottom-nav` below `lg` — the same variable the bar sets its own
+     height from, so the two cannot drift apart again. `env()` adds the home-indicator gap
+     on top of that on devices that report one. */
+  padding-bottom: calc(var(--hub-bottom-nav-h) + env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 1024px) {
+  .hub-main {
+    padding-bottom: 0;
+  }
+}
+
+.hub-band {
+  position: relative;
+  z-index: 10;
+  /* Published as a variable as well as applied, so a full-bleed child (`.hub-tpl-reel`)
+     can negate exactly this padding rather than guessing at it. */
+  --hub-band-pad: clamp(16px, 3.5vw, 44px);
+  padding: clamp(34px, 4.5vw, 56px) var(--hub-band-pad);
+}
+
+.hub-band + .hub-band {
+  border-top: 1px solid var(--border);
+}
+
+/* ── hero: the coverflow ────────────────────────────────────────────────── */
+
+/**
+ * A deck seen at an angle, not a carousel. The centre card faces you; every card either
+ * side is rotated away and pushed back in Z, so the row has a focus without needing a
+ * highlight ring — depth is doing the work a border would otherwise do.
+ *
+ * `--o` is the signed offset from centre, set per card in JSX. Everything else is derived
+ * from it, which is why adding or removing cards needs no CSS change.
+ *
+ * It runs full-bleed: the cards travelling out of frame should leave the *screen*, not
+ * stop at a content margin, so the deck negates the band's horizontal padding and clips
+ * at the viewport instead.
+ */
+.hub-deck {
+  position: relative;
+  margin-top: clamp(28px, 4vw, 56px);
+  margin-inline: calc(clamp(16px, 3.5vw, 44px) * -1);
+  overflow: hidden;
+}
+
+.hub-coverflow {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  perspective: 1800px;
+  min-height: clamp(420px, 56vh, 700px);
+}
+
+.hub-cover {
+  position: absolute;
+  width: clamp(210px, 23vw, 380px);
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius);
+  background: var(--panel);
+  cursor: pointer;
+  /* Spacing is deliberately close to card width: the cards should overlap like a hand of
+     cards, but not so far that a neighbour eclipses the centre. */
+  transform: translate3d(calc(var(--o) * clamp(154px, 17.5vw, 310px)), 0, calc(var(--depth) * -1px))
+    rotateY(calc(var(--o) * -14deg)) scale(var(--scale));
+  opacity: var(--fade);
+  z-index: var(--z);
+  /* Long enough to read as a turntable rather than a snap; the deck dwells between moves,
+     so the travel time still leaves the centre card still for most of its turn. */
+  transition:
+    transform 900ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 900ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 900ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, opacity;
+}
+
+/* The one thing in the room that never fully sits still: a slow, continuous drift on the
+   centre card so the deck reads as alive even during its 2.8s dwell between turns, not
+   just at the moment it moves. Kept subtle — this rides on top of the turntable transform,
+   not instead of it — and switched off entirely under reduced motion below. */
+@media (prefers-reduced-motion: no-preference) {
+  .hub-cover[data-centre="true"] {
+    animation: hub-cover-breathe 5200ms ease-in-out infinite;
+  }
+}
+
+/**
+ * Parked. The ring wraps, so a card leaving one edge is mathematically re-entering at the
+ * other — without suppressing the transition it would slide the whole width of the deck
+ * in front of everything else. Invisible, inert, and not in the tab order.
+ */
+.hub-cover[data-far="true"] {
+  opacity: 0;
+  transition: none;
+  pointer-events: none;
+}
+
+.hub-cover[data-centre="true"] {
+  box-shadow:
+    0 40px 80px -28px rgba(0, 0, 0, 0.92),
+    0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.hub-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* The `desk-relabel` role sets `display: inline-block`, so the crossfading text lives in
+   an inner span and this stays a block that can centre itself. */
+.hub-deck-caption {
+  margin: clamp(14px, 2vw, 22px) auto 0;
+  max-width: 62ch;
+  padding-inline: clamp(16px, 3.5vw, 44px);
+  text-align: center;
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.hub-cover-arrow {
+  position: absolute;
+  top: 50%;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  translate: 0 -50%;
+  border: 1px solid var(--border-2);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--raised) 82%, transparent);
+  backdrop-filter: blur(10px);
+  color: var(--text);
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease;
+}
+
+.hub-cover-arrow:hover {
+  border-color: var(--accent);
+  background: var(--raised);
+}
+
+/* ── the tool composer (image, and every tool route migrated after it) ──── */
+
+/**
+ * Same slab as `.desk-composer` on `/` — background, blur, elevation, focus ring — minus
+ * that rule's fixed `sm:` height. The landing composer is locked to one line plus at most
+ * one extra field, so a fixed height keeps five tool tabs from jumping the page around it.
+ * A real tool's composer carries a reference-image preview and a variable number of
+ * modifier tags, so it has to size to its own content instead.
+ */
+.hub-composer {
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--panel) 96%, transparent);
+  backdrop-filter: blur(20px) saturate(130%);
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.07) inset,
+    0 32px 80px -28px rgba(0, 0, 0, 0.9),
+    0 6px 18px -8px rgba(0, 0, 0, 0.65);
+  transition: box-shadow 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hub-composer:focus-within {
+  box-shadow:
+    0 0 0 2px var(--accent),
+    0 32px 80px -24px rgba(0, 0, 0, 0.94),
+    0 6px 18px -8px rgba(0, 0, 0, 0.65);
+}
+
+/* A modifier tag, toggled. Same family as `.desk-pill`/`.hub-tool` — pill radius, glass
+   ground at rest, accent fill when selected — so a tag reads as the same kind of control
+   as everything else in the shelf instead of a smaller, squarer species of its own. */
+.hub-modifier {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--border-2);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--raised) 45%, transparent);
+  padding: 6px 11px;
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.hub-modifier:hover {
+  color: var(--text);
+}
+
+.hub-modifier[data-active="true"] {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent);
+}
+
+/* ── the tool workspace: rail (HubShell) + resizable composer + right panel ── */
+
+/**
+ * Below `xl` this is a plain block: composer, then right panel, stacked, the page
+ * scrolling as one — there isn't room for three independently-scrolling columns on a
+ * phone, and pretending there is would mean a fixed-height panel showing two rows of a
+ * ten-row grid. At `xl` it becomes the three-panel shell: the rail `HubShell` already
+ * mounts, a resizable composer column, and whatever's left. `61px` is the topbar's own
+ * rendered height (measured, not guessed) — subtracting it means the row's total height
+ * plus the topbar's exactly fills `100dvh`, so the *page* never scrolls and only the two
+ * panels inside it do.
+ */
+@media (min-width: 1280px) {
+  .tool-workspace {
+    display: flex;
+    align-items: stretch;
+    height: calc(100dvh - 61px);
+    overflow: hidden;
+  }
+
+  .tool-workspace-middle {
+    width: var(--panel-w, 480px);
+    flex-shrink: 0;
+    height: 100%;
+    overflow-y: auto;
+  }
+
+  .tool-workspace-handle {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    cursor: col-resize;
+    touch-action: none;
+  }
+
+  .tool-workspace-handle-grip {
+    height: 44px;
+    width: 3px;
+    border-radius: 999px;
+    background: var(--border-2);
+    transition: background-color 160ms ease;
+  }
+
+  .tool-workspace-handle:hover .tool-workspace-handle-grip,
+  .tool-workspace-handle:active .tool-workspace-handle-grip {
+    background: var(--accent);
+  }
+
+  .tool-workspace-right {
+    flex: 1;
+    min-width: 320px;
+    height: 100%;
+    overflow-y: auto;
+    border-left: 1px solid var(--border);
+    padding: clamp(20px, 2.6vw, 32px);
+  }
+}
+
+.tool-workspace-handle {
+  display: none;
+}
+
+.tool-workspace-middle {
+  padding: clamp(20px, 4vw, 40px) clamp(16px, 4vw, 32px) 48px;
+}
+
+.tool-workspace-right {
+  padding: clamp(20px, 4vw, 32px) clamp(16px, 4vw, 32px) 40px;
+  border-top: 1px solid var(--border);
+}
+
+/* ── the right panel's own tabs — Templates / My Generations ─────────────── */
+
+.tool-tab-bar {
+  display: inline-flex;
+  gap: 4px;
+  margin-bottom: 18px;
+  border: 1px solid var(--border-2);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--panel) 70%, transparent);
+  padding: 4px;
+}
+
+.tool-tab {
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.tool-tab:hover {
+  color: var(--text);
+}
+
+.tool-tab[data-active="true"] {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.tool-tab-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  border: 1px dashed var(--border-2);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+
+/* ── the tool bar and its menus ─────────────────────────────────────────── */
+
+/* `backdrop-filter` makes this a stacking context, which traps the menus inside it — so
+   the bar itself has to be raised above the composer, not just the menu above the bar. */
+.hub-toolbar {
+  position: relative;
+  z-index: 40;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  border: 1px solid var(--border-2);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--panel) 82%, transparent);
+  padding: 5px;
+  backdrop-filter: blur(10px) saturate(130%);
+}
+
+.hub-tool {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.hub-tool:hover {
+  color: var(--text);
+}
+
+.hub-tool[data-active="true"] {
+  background: var(--accent);
+  color: var(--on-accent);
+  box-shadow: 0 10px 24px -10px color-mix(in srgb, var(--accent) 60%, transparent);
+}
+
+/**
+ * The menu opens on hover *and* on focus, and the whole tool keeps a hover target while
+ * the pointer travels down into it — hence the padded wrapper rather than a gap. A menu
+ * that closes when you move towards it is a menu that has to be defeated.
+ */
+.hub-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  z-index: 50;
+  width: max-content;
+  min-width: 250px;
+  max-width: 320px;
+  translate: -50% 0;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius);
+  background: var(--panel);
+  padding: 6px;
+  box-shadow: 0 28px 60px -20px rgba(0, 0, 0, 0.9);
+  animation: hub-menu-in 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.hub-menu-item {
+  display: block;
+  width: 100%;
+  border-radius: max(2px, calc(var(--radius) * 0.75));
+  padding: 8px 10px;
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--muted);
+  text-align: left;
+  text-decoration: none;
+  transition:
+    background-color 140ms ease,
+    color 140ms ease;
+}
+
+.hub-menu-item:hover {
+  background: var(--raised);
+  color: var(--text);
+}
+
+/* ── content cards ──────────────────────────────────────────────────────── */
+
+.hub-scroller {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 4px;
+}
+
+.hub-scroller > * {
+  scroll-snap-align: start;
+}
+
+/**
+ * A card whose whole face is the artwork, with the copy laid over the bottom. Used for
+ * "what's new" and for models, where the picture *is* the announcement.
+ */
+.hub-poster {
+  position: relative;
+  display: flex;
+  min-width: 260px;
+  flex: 1;
+  aspect-ratio: 16 / 10;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel);
+  padding: 14px;
+  text-decoration: none;
+  transition:
+    border-color 200ms ease,
+    transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hub-poster:hover {
+  border-color: var(--border-2);
+  transform: translateY(-2px);
+}
+
+/* Explicitly behind the scrim. The copy below raises every direct child to z-index 1 so
+   it clears the gradient, and the artwork is a direct child too — without this it rides
+   up with the text and the caption becomes unreadable on any bright image. */
+.hub-poster img {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hub-poster::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 34%, rgba(0, 0, 0, 0.78) 100%);
+}
+
+.hub-poster > * {
+  position: relative;
+  z-index: 1;
+}
+
+/**
+ * The suite card is the opposite arrangement: copy leads, the thumbnail is evidence on
+ * the right. The lit left edge is the tool's own hue, so the grid is colour-coded by
+ * what the card opens without any of them shouting.
+ */
+.hub-suite-card {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel);
+  text-decoration: none;
+  transition:
+    border-color 200ms ease,
+    transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hub-suite-card::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  width: 2px;
+  background: var(--hue, var(--accent));
+  box-shadow: 0 0 22px 1px var(--hue, var(--accent));
+  opacity: 0.85;
+}
+
+.hub-suite-card:hover {
+  border-color: var(--border-2);
+  transform: translateY(-2px);
+}
+
+.hub-suite-thumb {
+  width: 104px;
+  flex-shrink: 0;
+  object-fit: cover;
+}
+
+/* ── "More" / "See all" — the small accent link every band header ends with ── */
+
+.hub-more-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--accent);
+  text-decoration: none;
+  transition: gap 160ms ease;
+}
+
+.hub-more-link:hover {
+  gap: 8px;
+}
+
+/* ── latest AI models — image on top, copy below, unlike `.hub-poster`'s overlay ── */
+
+.hub-model-card {
+  display: flex;
+  min-width: 240px;
+  max-width: 300px;
+  flex: 1;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.hub-model-thumb {
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+
+.hub-model-thumb img,
+.hub-model-thumb video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hub-model-card:hover .hub-model-thumb img,
+.hub-model-card:hover .hub-model-thumb video {
+  transform: scale(1.04);
+}
+
+.hub-model-name {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 15.5px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.hub-model-desc {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--muted-2);
+}
+
+/* ── inspirations — tabs over a category grid ─────────────────────────────── */
+
+.hub-insp-tab {
+  flex-shrink: 0;
+  border: 1px solid var(--border-2);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--raised) 45%, transparent);
+  padding: 8px 14px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    border-color 160ms ease;
+}
+
+.hub-insp-tab:hover {
+  color: var(--text);
+}
+
+.hub-insp-tab[data-active="true"] {
+  border-color: var(--text);
+  background: var(--text);
+  color: var(--bg);
+}
+
+/**
+ * The template gallery — every tile a real clip (`lib/template-videos`), muted and looping
+ * so the grid reads as footage rather than a photo wall. A justified row, not a grid, same
+ * technique as `.hub-insp-grid` uses for stock photos: `ffprobe` reads each clip's real
+ * `aspect` at author time (see `lib/template-videos.ts`), so every tile lays out at its
+ * true proportions — no cropping, no stretching — instead of being forced into a uniform
+ * cell. `--tpl-h` is the one thing callers vary: the home band and the category page use
+ * the default; the tool workspace's narrower panel sets a smaller one.
+ */
+.hub-tpl-grid {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.hub-tpl-tile {
+  height: var(--tpl-h, clamp(120px, 15vw, 200px));
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel);
+  cursor: pointer;
+}
+
+/* Below `sm` the justified flow (a fixed row height, width falling out of
+   `aspect-ratio`) leaves every tile narrower than the column with dead space
+   beside it — there's no second tile per row to flow into. One column, full
+   width, height falling out of the aspect ratio instead.
+
+   Note this applies to `.hub-tpl-grid` only, which after the reel below is the
+   *category page* (`/home/inspirations/:id`) — the gallery you asked for. The
+   home band never reaches it. */
+@media (max-width: 639px) {
+  /* Two masonry columns, not one stacked column. The justified flow can't work here — a
+     fixed row height with width falling out of `aspect-ratio` leaves every tile narrower
+     than the column and dead space beside it, because there is no second tile per row to
+     flow into. But going all the way to one full-bleed tile per row put 24 tiles and
+     10,000px of scrolling on a category page, and a gallery you can only see one item of
+     is a slideshow. `columns` has no rows at all, so a portrait beside a square doesn't
+     leave a slab of empty panel under the shorter one — the same reason `.tplx-grid`
+     uses it. */
+  .hub-tpl-grid {
+    display: block;
+    columns: 2;
+    column-gap: 8px;
+  }
+
+  .hub-tpl-tile {
+    width: 100%;
+    height: auto;
+    margin-bottom: 8px;
+    /* Without this a tile can be split across the column break, showing its top half at
+       the foot of one column and its bottom half at the head of the next. */
+    break-inside: avoid;
+  }
+}
+
+/**
+ * The same tiles, one row, scrolling sideways — what a *category preview* on the home page
+ * is, as opposed to the category's own gallery.
+ *
+ * `/home` carries ten of these bands. Wrapped as a justified flow they ran the page to
+ * 13,000px on a desktop and 45,000px on a phone (one full-width tile per row, fifty-three
+ * viewport-heights of scrolling) before the sections *below* Inspirations were reachable at
+ * all. A preview strip that admits it is a preview fixes the length and the information
+ * architecture at once: each band is now one row deep, and the "See all →" already sitting
+ * in every band header is the way into the full grid rather than decoration on top of it.
+ *
+ * Snap points land a tile against the left edge instead of mid-crop, and the row keeps the
+ * fixed height / true-aspect-ratio behaviour the grid has, so a 0.56 portrait and a 3.2
+ * ultrawide still lay out at their real proportions.
+ */
+.hub-tpl-reel {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  /* Full-bleed to the band's edge so the row visibly runs off-screen — a strip that stops
+     short of the margin reads as a grid that happens to be one row long. */
+  margin-inline: calc(var(--hub-band-pad, 0px) * -1);
+  padding-inline: var(--hub-band-pad, 0px);
+  scroll-padding-inline-start: var(--hub-band-pad, 0px);
+}
+
+.hub-tpl-reel > .hub-tpl-tile {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+  height: var(--tpl-h, clamp(150px, 16vw, 210px));
+  width: auto;
+}
+
+.hub-tpl-tile video,
+.hub-tpl-tile img {
+  display: block;
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+  transition: transform 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hub-tpl-tile:hover video,
+.hub-tpl-tile:hover img {
+  transform: scale(1.05);
+}
+
+/**
+ * The Templates / My Generations / My Work grid — true masonry, capped at `--tplx-cols`
+ * columns (3 by default, 4 on `/profile`'s wider column via `MediaTemplateGrid`'s
+ * `columns` prop). A row-locked `display: grid` was tried first and looked broken: CSS
+ * grid sizes every cell in a row to the *tallest* cell in that row, so a portrait tile
+ * next to a square one left a slab of empty panel under the shorter tile instead of the
+ * next row simply starting sooner. `columns` doesn't have rows at all — each column
+ * stacks its own tiles back-to-back regardless of what the neighbouring column is doing,
+ * which is exactly how a real photo-grid (and the aspect-preserving tiles this system
+ * already commits to) has to behave. Each tile still keeps its item's real `aspect` (set
+ * inline) rather than cropping to a uniform box.
+ */
+.tplx-grid {
+  column-count: 2;
+  column-gap: 10px;
+}
+
+@media (min-width: 480px) {
+  .tplx-grid {
+    column-count: var(--tplx-cols, 3);
+  }
+}
+
+.tplx-grid-cell {
+  position: relative;
+  overflow: hidden;
+  break-inside: avoid;
+  margin-bottom: 10px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+}
+
+.tplx-grid-tile {
+  position: absolute;
+  inset: 0;
+  cursor: pointer;
+}
+
+.tplx-grid-tile video,
+.tplx-grid-tile img {
+  display: block;
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+  transition: transform 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tplx-grid-tile:hover video,
+.tplx-grid-tile:hover img {
+  transform: scale(1.05);
+}
+
+.tplx-grid-fav {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 1;
+  display: grid;
+  height: 26px;
+  width: 26px;
+  place-items: center;
+  border: 1px solid var(--border-2);
+  background: color-mix(in srgb, var(--raised) 82%, transparent);
+  color: var(--text);
+  opacity: 0;
+  transition:
+    opacity 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+}
+
+.tplx-grid-cell:hover .tplx-grid-fav,
+.tplx-grid-fav[data-active="true"] {
+  opacity: 1;
+}
+
+.tplx-grid-fav[data-active="true"] {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
+.tplx-grid-fav:hover {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
+/* ── the template detail popup — a floating card, not an edge-to-edge lightbox ──── */
+
+.tplx-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(16px, 4vw, 48px);
+  background: rgba(10, 8, 12, 0.78);
+  backdrop-filter: blur(10px);
+  animation: hub-fade-in 180ms ease both;
+}
+
+.tplx-backdrop[data-closing="true"] {
+  animation: hub-fade-out 160ms ease both;
+}
+
+.tplx-modal {
+  position: relative;
+  display: flex;
+  width: 100%;
+  max-width: 1080px;
+  max-height: 100%;
+  overflow: hidden;
+  border: 1px solid var(--border-2);
+  border-radius: calc(var(--radius) * 3);
+  background: var(--panel-2);
+  box-shadow: 0 48px 110px -24px rgba(0, 0, 0, 0.9);
+  animation: tplx-modal-in 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.tplx-modal[data-closing="true"] {
+  animation: tplx-modal-out 160ms ease both;
+}
+
+@keyframes tplx-modal-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(10px);
+  }
+}
+
+@keyframes tplx-modal-out {
+  to {
+    opacity: 0;
+    transform: scale(0.97) translateY(6px);
+  }
+}
+
+@keyframes hub-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+.tplx-media {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+  padding: 24px;
+}
+
+.tplx-media video {
+  max-height: 72dvh;
+}
+
+.tplx-rail {
+  display: flex;
+  width: 380px;
+  flex-shrink: 0;
+  flex-direction: column;
+  gap: 18px;
+  border-left: 1px solid var(--border);
+  padding: 28px 24px;
+  overflow-y: auto;
+}
+
+.tplx-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 1;
+  display: grid;
+  height: 32px;
+  width: 32px;
+  place-items: center;
+  border-radius: 999px;
+  border: 1px solid var(--border-2);
+  background: color-mix(in srgb, var(--raised) 85%, transparent);
+  color: var(--text);
+  transition: border-color 160ms ease;
+}
+
+.tplx-close:hover {
+  border-color: var(--accent);
+}
+
+@media (max-width: 800px) {
+  .tplx-modal {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .tplx-media {
+    flex: none;
+    min-height: 260px;
+  }
+
+  .tplx-rail {
+    width: 100%;
+    border-left: 0;
+    border-top: 1px solid var(--border);
+    overflow-y: visible;
+  }
+}
+
+.tplx-showcase {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+
+.tplx-showcase video {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.hub-insp-banner {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel);
+  padding: clamp(20px, 3.5vw, 34px);
+}
+
+/* ── the catalogue band's scroll-spy ────────────────────────────────────── */
+
+/**
+ * The category pills stick under the topbar and follow the reader down the page. They are
+ * a position readout first and a control second — which is why the active pill is set by
+ * an IntersectionObserver on the sections rather than only by clicking.
+ */
+.hub-spy {
+  position: sticky;
+  /* Clears the topbar, which is itself sticky at 0 — otherwise the two strips overlap
+     and the category you are reading is hidden behind the credits. */
+  top: 53px;
+  z-index: 30;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  margin-inline: calc(clamp(16px, 3.5vw, 44px) * -1);
+  padding: 12px clamp(16px, 3.5vw, 44px);
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(14px) saturate(140%);
+}
+
+.hub-spy-pill {
+  flex-shrink: 0;
+  border-radius: 999px;
+  border: 1px solid var(--border-2);
+  background: color-mix(in srgb, var(--raised) 55%, transparent);
+  padding: 7px 14px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+}
+
+.hub-spy-pill:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.hub-spy-pill[data-active="true"] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+/* ── the asset lightbox ─────────────────────────────────────────────────── */
+
+.hub-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  background: color-mix(in srgb, var(--bg) 96%, transparent);
+  backdrop-filter: blur(18px);
+  animation: hub-fade-in 200ms ease both;
+}
+
+@media (min-width: 900px) {
+  .hub-lightbox {
+    flex-direction: row;
+  }
+}
+
+.hub-lightbox-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  border-top: 1px solid var(--border);
+  padding: 22px;
+  overflow-y: auto;
+}
+
+@media (min-width: 900px) {
+  .hub-lightbox-rail {
+    width: 340px;
+    flex-shrink: 0;
+    border-top: 0;
+    border-left: 1px solid var(--border);
+  }
+}
+
+/* ── template lightbox — author, brief, references ────────────────────────── */
+
+.tpl-avatar {
+  display: grid;
+  height: 34px;
+  width: 34px;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 30%, var(--raised));
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.tpl-clamp {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.tpl-ref-thumb {
+  display: block;
+  height: 56px;
+  width: 56px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+
+.tpl-ref-thumb img {
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+}
+
+/* ── motion ─────────────────────────────────────────────────────────────── */
+
+@keyframes hub-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes hub-menu-in {
+  from {
+    opacity: 0;
+    translate: -50% -6px;
+  }
+}
+
+/* Only ever applied to the centre card — see the `no-preference` guard above — so the
+   identity pose here can assume `--o: 0`, `--depth: 0`, `--scale: 1` without recomputing
+   the deck's ring math. */
+@keyframes hub-cover-breathe {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotateY(0deg) scale(1);
+  }
+  50% {
+    transform: translate3d(0, -7px, 0) rotateY(0deg) scale(1.015);
+  }
+}
+
+/* The deck stops advancing on its own in JS; this keeps the arrows instant rather than
+   easing a 900ms turn for someone who asked for less movement. */
+@media (prefers-reduced-motion: reduce) {
+  .hub-sidebar,
+  .hub-cover,
+  .hub-poster,
+  .hub-model-thumb img,
+  .hub-model-thumb video,
+  .hub-insp-tile img,
+  .hub-suite-card {
+    transition-duration: 1ms;
+  }
+
+  .hub-menu,
+  .hub-lightbox,
+  .hub-sidebar-scrim {
+    animation-duration: 1ms;
+  }
+}
+
+/* ── mobile bottom nav ──────────────────────────────────────────────────────
+   Five targets in a fixed bar, gone at `lg` where `.hub-sidebar` is already
+   visible. Same rule/mono/zero-radius grammar as the rail — this is a second
+   surface for the same navigation, not a second visual system. */
+
+/* Height is declared, not left to fall out of the items' padding, because `.hub-main`
+   has to reserve exactly this much and the two numbers were not the same: the bar
+   measured 64px and the main column cleared 56, so the last 8px of every page on a phone
+   — often the bottom edge of a primary button — sat underneath it. One variable, read in
+   both places. */
+.hub-bottom-nav {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 60;
+  display: flex;
+  height: calc(var(--hub-bottom-nav-h) + env(safe-area-inset-bottom, 0px));
+  align-items: stretch;
+  border-top: 1px solid var(--border);
+  background: var(--panel-2);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.hub-bottom-nav-item {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 9px 4px 8px;
+  font-family: var(--font-sans);
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--muted-2);
+  text-decoration: none;
+  transition: color 160ms ease;
+}
+
+.hub-bottom-nav-item.is-active {
+  color: var(--accent);
+}
+
+.hub-bottom-nav-create {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 9px 4px 8px;
+  border: none;
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  background: transparent;
+  font-family: var(--font-sans);
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--text);
+  transition: background-color 160ms ease;
+}
+
+.hub-bottom-nav-create[aria-expanded="true"] {
+  background: var(--raised);
+}
+
+.hub-bottom-nav-create-icon {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--border-2);
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.hub-bottom-nav-create[aria-expanded="true"] .hub-bottom-nav-create-icon {
+  background: var(--panel);
+  color: var(--text);
+}
+
+/* ── the Create fan ─────────────────────────────────────────────────────── */
+
+.hub-create-fan-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 65;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  animation: hub-fade-in 180ms ease both;
+}
+
+.hub-create-fan {
+  display: flex;
+  width: min(420px, 100% - 32px);
+  flex-direction: column;
+  gap: 1px;
+  border: 1px solid var(--border-2);
+  background: var(--border);
+  animation: hub-fan-in 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.hub-create-fan-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border: none;
+  background: var(--panel-2);
+  padding: 12px 14px;
+  text-align: left;
+  transition: background-color 160ms ease;
+}
+
+/* Hue reads on interaction only, the same rule `.hub-create-tile` (the rail's own Create
+   grid) already follows — a resting-state colour stripe on every row is decoration, not
+   information. */
+.hub-create-fan-tile:hover,
+.hub-create-fan-tile:focus-visible {
+  background: var(--raised);
+}
+
+.hub-create-fan-tile:hover .hub-create-fan-label,
+.hub-create-fan-tile:focus-visible .hub-create-fan-label {
+  color: var(--hue, var(--accent));
+}
+
+.hub-create-fan-label {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  transition: color 160ms ease;
+}
+
+.hub-create-fan-blurb {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  color: var(--muted-2);
+}
+
+@keyframes hub-fan-in {
+  from {
+    opacity: 0;
+    translate: 0 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hub-create-fan-scrim {
+    animation-duration: 1ms;
+  }
+
+  .hub-create-fan {
+    animation-duration: 1ms;
+  }
+}

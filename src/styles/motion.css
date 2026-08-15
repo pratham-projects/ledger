@@ -1,0 +1,577 @@
+/* ============================================================================
+   LEDGER MOTION SYSTEM
+   ============================================================================
+
+   One idea: **everything arrives the way an image does.**
+
+   The product's actual subject is diffusion — noise becoming a picture — so that
+   is the motion language of the whole interface. Panels, rows, prices and avatars
+   de-noise into existence: blur clearing, saturation rising. When a generated
+   result finally lands, it lands the same way, only slower and on purpose.
+
+   The one departure is **hover**, which does not de-noise. Hover draws a rule
+   under the target, left to right — the printout gesture, because acknowledgment
+   should be a mark on the page, not a change of focus. Resolving is for things
+   that are *arriving*; a hover is not an arrival.
+
+   HOW IT IS ORGANISED
+
+   Components never write a duration, a curve, or a keyframe. They apply a
+   *semantic role* that says what is happening, and this file decides what that
+   looks like. That is the whole contract, and it is what keeps motion auditable
+   instead of scattered across sixty hand-tuned transitions.
+
+     m-enter      an element arrives
+     m-exit       an element leaves
+     m-stagger    a list arrives as a list  (children carry --m-i)
+     m-swap       content is replaced in place (tab body, panel body)
+     m-view       a route body arrives — deliberately the quietest role
+     m-hover      pointer acknowledgment on an interactive surface
+     m-press      commit feedback on activation
+     m-expand     a container opens or closes (grid-rows 0fr↔1fr)
+     m-marker     the selection indicator moving between positions
+     m-pending    a loop that means "working"
+     m-resolve    pending → result; the payoff frame
+     m-attention  a value changed and you must notice
+     m-overlay    a modal/dialog surface
+     m-scrim      the dimmer behind it
+
+   RULES
+     1. Default state is the *visible* state. Motion is `both`-filled from a
+        keyframe, never a script that must run for content to exist.
+     2. Exit is always faster than enter.
+     3. Nothing loops that isn't actually working.
+     4. Reduced motion has ONE global escape, at the bottom of this file.
+        Components must not re-implement it.
+     5. Never animate a layout property. `grid-template-rows`, transform, clip.
+     6. No bounce, no elastic, no spring overshoot. Ledger does not boing.
+
+   Spec and rationale: docs/motion.md. Live specimens: /motion.
+
+   NOTE ON WHAT THIS DOES *NOT* OWN: the generating animation on image and video
+   is `DitheringShader`, and it is not part of this system. `m-pending` covers
+   waiting on bytes; the shader covers waiting on the model. See
+   components/media/resolving-image.tsx.
+   ========================================================================== */
+
+:root {
+  /* Durations */
+  --m-fast: 120ms;
+  --m-base: 220ms;
+  --m-slow: 360ms;
+  --m-focal: 600ms;
+
+  /* Curves */
+  --m-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --m-ease-exit: cubic-bezier(0.5, 0, 0.9, 0.3);
+
+  /* Rhythm */
+  --m-step: 46ms; /* per-sibling stagger */
+  --m-step-cap: 380ms; /* total stagger budget, however long the list is */
+  --m-shift: 4px; /* travel distance on an arrival */
+
+  /* Hover is asymmetric on purpose: noticing must be immediate, forgetting
+     need not be. */
+  --m-hover-in: 130ms;
+  --m-hover-out: 260ms;
+
+  /* Role timings */
+  --m-enter-dur: 460ms;
+  --m-exit-dur: 200ms;
+  --m-swap-dur: 420ms;
+  --m-view-dur: 320ms;
+  --m-overlay-dur: 400ms;
+  --m-attention-dur: 520ms;
+  --m-pending-dur: 2200ms;
+  --m-resolve-dur: 720ms;
+  --m-expand-dur: 420ms;
+  --m-marker-dur: 320ms;
+
+  /* Stream. The word duration is longer than the interval between words on
+     purpose — three or four words are always mid-arrival, which is what makes
+     the edge of the text read as soft rather than as a hard cursor. */
+  --m-stream-dur: 340ms;
+  --m-caret-dur: 1100ms;
+  --m-media-in-dur: 520ms;
+}
+
+/* ============================================================================
+   ARRIVAL — the de-noise
+   ========================================================================== */
+
+@keyframes m-enter {
+  from {
+    opacity: 0;
+    filter: blur(8px) saturate(0.4);
+    transform: translateY(var(--m-shift)) scale(1.006);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0) saturate(1);
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes m-exit {
+  from {
+    opacity: 1;
+    filter: blur(0);
+  }
+  to {
+    opacity: 0;
+    filter: blur(6px);
+  }
+}
+
+.m-enter {
+  animation: m-enter var(--m-enter-dur) var(--m-ease) both;
+}
+
+.m-exit {
+  animation: m-exit var(--m-exit-dur) var(--m-ease-exit) both;
+}
+
+.m-swap {
+  animation: m-enter var(--m-swap-dur) var(--m-ease) both;
+}
+
+/* Children carry `--m-i` (their index) via `stagger(i)` from lib/motion.ts.
+   Total delay is capped so the last tile of a 60-item catalog never waits on
+   the first. */
+.m-stagger > * {
+  animation: m-enter var(--m-enter-dur) var(--m-ease) both;
+  animation-delay: min(calc(var(--m-i, 0) * var(--m-step)), var(--m-step-cap));
+}
+
+/* Route-level arrival — the quietest role in the system, and deliberately not
+   the same as `m-enter`.
+
+   Operationally: this is an Operate product, and a user going /browse → /image
+   is mid-task. They must not wait through choreography.
+
+   Technically: `filter`, `clip-path` and `transform` on a page-level container
+   establish a containing block, which would break the sticky LoadedBar and any
+   fixed descendant. `fill-mode: backwards` confines even this to the
+   animation's own lifetime rather than leaving a `blur(0)` behind forever.
+
+   The system's character lives in the panels arriving *inside* the view. */
+.m-view {
+  animation: m-view-in var(--m-view-dur) var(--m-ease) backwards;
+}
+
+@keyframes m-view-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--m-shift));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================================================
+   HOVER AND PRESS — the printout gesture
+   A rule is drawn under the target, left to right. Nothing blurs, nothing
+   translates: this is a mark being made, not something arriving.
+   ========================================================================== */
+
+.m-hover {
+  position: relative;
+  transition-property: color, border-color, background-color;
+  transition-duration: var(--m-hover-out);
+  transition-timing-function: var(--m-ease);
+}
+
+/* Only the timing changes here. The rule below is the whole gesture; call sites
+   keep their own explicit `hover:border-*` utilities rather than having a border
+   colour imposed on them from inside the motion layer. */
+.m-hover:hover,
+.m-hover:focus-visible {
+  transition-duration: var(--m-hover-in);
+}
+
+.m-hover::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform var(--m-hover-out) var(--m-ease);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.m-hover:hover::after,
+.m-hover:focus-visible::after {
+  transform: scaleX(1);
+  transition-duration: var(--m-hover-in);
+}
+
+/* Media may be lifted on hover but never dimmed at rest — generated work has to
+   render as it actually is (DESIGN.md: the media is the brightest thing on
+   screen). The system may add; it must not subtract. */
+.m-hover img,
+.m-hover canvas {
+  transition: filter var(--m-hover-out) var(--m-ease), transform var(--m-hover-out) var(--m-ease);
+}
+
+.m-hover:hover img,
+.m-hover:hover canvas {
+  filter: saturate(1.08) brightness(1.04);
+  transform: scale(1.012);
+}
+
+.m-press {
+  transition-property: transform, filter;
+  transition-duration: var(--m-fast);
+  transition-timing-function: var(--m-ease);
+}
+
+.m-press:active {
+  filter: brightness(1.15);
+}
+
+/* ============================================================================
+   STATE — expand, marker, attention, overlay
+   ========================================================================== */
+
+/* Wrapper is `display:grid; grid-template-rows:0fr`, opened to `1fr`. The single
+   child gets `overflow:hidden; min-height:0` from here — callers don't repeat it.
+   Height itself is never animated. */
+.m-expand {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--m-expand-dur) var(--m-ease);
+}
+
+.m-expand > * {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.m-expand[data-open="true"] {
+  grid-template-rows: 1fr;
+}
+
+/* Transform only — never `left`/`width`. A marker is the one thing that moves on
+   every interaction, so it is the worst possible place to animate a layout
+   property. Call sites size it statically and drive position with translateX;
+   see the spool readout in browse/lora-reel.tsx. */
+.m-marker {
+  transition-property: transform, opacity, filter;
+  transition-duration: var(--m-marker-dur);
+  transition-timing-function: var(--m-ease);
+}
+
+/* The value defocuses and comes back, so the eye is pulled without the number
+   moving or changing colour. */
+.m-attention {
+  animation: m-attention var(--m-attention-dur) var(--m-ease) both;
+}
+
+@keyframes m-attention {
+  from {
+    filter: blur(3px);
+    opacity: 0.3;
+  }
+  to {
+    filter: blur(0);
+    opacity: 1;
+  }
+}
+
+/* Scrim and surface are timed separately: the scrim is linear and unremarkable
+   so the surface can carry the arrival. */
+.m-overlay {
+  animation: m-overlay var(--m-overlay-dur) var(--m-ease) both;
+}
+
+@keyframes m-overlay {
+  from {
+    opacity: 0;
+    filter: blur(14px);
+    transform: scale(0.985);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: scale(1);
+  }
+}
+
+.m-scrim {
+  animation: m-scrim-in var(--m-base) linear both;
+}
+
+@keyframes m-scrim-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Reverse of `m-overlay`/`m-scrim`, played instead of the entrance while a surface is
+   closing — see `hooks/use-exit-animation.ts`, which is what sets `data-closing`. */
+.m-overlay[data-closing="true"] {
+  animation: m-overlay-out var(--m-exit-dur) var(--m-ease-exit) both;
+}
+
+@keyframes m-overlay-out {
+  from {
+    opacity: 1;
+    filter: blur(0);
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    filter: blur(14px);
+    transform: scale(0.985);
+  }
+}
+
+.m-scrim[data-closing="true"] {
+  animation: m-scrim-out var(--m-exit-dur) linear both;
+}
+
+@keyframes m-scrim-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* ============================================================================
+   WORK — pending and resolve
+
+   `m-pending` is the latent field: a dither cell breathing under a region that
+   is genuinely waiting on something. `m-resolve` is the payoff — the held beat
+   where a result comes into focus. These two are the system's only authored
+   moment, and they are the reason it is built this way.
+
+   Neither of these is the *generating* animation. The model working is
+   `DitheringShader` on image and video, which this system does not touch.
+   `m-pending` covers waiting on bytes: the backend has returned a URL and the
+   picture is still in flight. See components/media/resolving-image.tsx.
+   ========================================================================== */
+
+.m-pending {
+  position: relative;
+  overflow: hidden;
+}
+
+.m-pending::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  /* Static image, animated size — the compositor gets one cheap property to
+     move instead of re-rasterising a gradient every frame.
+
+     Kept deliberately faint and fine-grained. This appears behind *every* image
+     on the site, including 44px avatars, so it has to read as grain under the
+     surface. Pushed any louder the cell resolves into a checkerboard, which is
+     the universal "missing texture" signal — and a large flat wash of accent
+     breaks the system's rule that colour marks state, never mood. */
+  background-color: rgba(var(--accent-rgb), 0.03);
+  background-image: repeating-conic-gradient(
+    rgba(var(--accent-rgb), 0.13) 0% 25%,
+    transparent 0% 50%
+  );
+  animation: m-pending var(--m-pending-dur) ease-in-out infinite;
+}
+
+@keyframes m-pending {
+  0%,
+  100% {
+    background-size: 4px 4px;
+    opacity: 0.55;
+  }
+  50% {
+    background-size: 9px 9px;
+    opacity: 1;
+  }
+}
+
+.m-resolve {
+  animation: m-resolve var(--m-resolve-dur) var(--m-ease) both;
+}
+
+@keyframes m-resolve {
+  0% {
+    opacity: 0;
+    filter: blur(16px) saturate(0.2) contrast(1.4);
+  }
+  60% {
+    opacity: 1;
+    filter: blur(2px) saturate(1.1) contrast(1.08);
+  }
+  100% {
+    opacity: 1;
+    filter: blur(0) saturate(1) contrast(1);
+  }
+}
+
+/* ============================================================================
+   STREAM — a model writing, and the picture it hands back
+   ============================================================================
+
+   The one place this system accepts a *sequential* reveal rather than a whole
+   element arriving at once. The justification is that the sequence is the
+   information: text appearing progressively is how a reader tells "a machine is
+   producing this, now" from "this was already here". Take that away and the
+   surface cannot answer the only question that matters about a generated line —
+   who wrote it.
+
+   It is deliberately NOT a terminal typewriter. Characters do not tick out one
+   by one behind a blinking block cursor; whole **words** arrive, each one
+   de-noising exactly the way every other element in the product does. So the
+   stream is the system's own arrival language played in sequence, not a costume
+   borrowed from a console.
+
+   Only the newest word animates. A paragraph mid-stream has one animating node,
+   not four hundred.
+   ========================================================================== */
+
+.m-stream {
+  animation: m-stream var(--m-stream-dur) var(--m-ease) both;
+  /* The word must not be able to reflow the paragraph while it fades in, or the
+     text would jitter on every single word. */
+  display: inline;
+}
+
+@keyframes m-stream {
+  from {
+    opacity: 0;
+    filter: blur(5px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+/* The write-head. A rule, not a block — the same mark the hover gesture draws,
+   standing where the next word will land. It breathes rather than blinks:
+   a hard on/off blink is a terminal, and it fights the de-noise beside it. */
+.m-caret {
+  display: inline-block;
+  width: 0.5em;
+  height: 1em;
+  margin-left: 0.12em;
+  vertical-align: text-bottom;
+  border-bottom: 2px solid var(--accent);
+  animation: m-caret var(--m-caret-dur) var(--m-ease) infinite;
+}
+
+@keyframes m-caret {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* A generated picture's *container* arriving — distinct from `m-resolve`, which
+   owns the bytes inside it. Two different events: the frame is claimed the
+   moment the model commits to an image, and the image lands inside it later.
+   A clip wipe rather than a fade, so the frame reads as being ruled onto the
+   page rather than ghosting in. */
+.m-media-in {
+  animation: m-media-in var(--m-media-in-dur) var(--m-ease) both;
+}
+
+@keyframes m-media-in {
+  from {
+    opacity: 0;
+    clip-path: inset(0 0 100% 0);
+  }
+  to {
+    opacity: 1;
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+/* ============================================================================
+   LEGACY ALIASES
+   `ledger-cell-reveal` and `ledger-message-in` were hand-rolled before this
+   system existed and are used across chat, rpg and the modals. Aliasing them
+   keeps those call sites correct without a rename sweep. New code uses roles.
+   ========================================================================== */
+
+.ledger-cell-reveal,
+.ledger-message-in {
+  animation: m-enter var(--m-enter-dur) var(--m-ease) both;
+}
+
+/* ============================================================================
+   REDUCED MOTION — the single global escape
+   Content stays visible and legible; only movement is removed. Hover and focus
+   still change colour, because that is information, not decoration.
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .m-enter,
+  .m-exit,
+  .m-swap,
+  .m-view,
+  .m-stagger > *,
+  .m-resolve,
+  .m-attention,
+  .m-overlay,
+  .m-scrim,
+  .m-stream,
+  .m-media-in,
+  .ledger-cell-reveal,
+  .ledger-message-in {
+    animation: none !important;
+    opacity: 1 !important;
+    filter: none !important;
+    transform: none !important;
+    clip-path: none !important;
+  }
+
+  /* The caret stops breathing but stays put: it is the only thing marking where
+     a stream has got to, and under reduced motion the stream itself is
+     instant anyway (see hooks/use-streamed-text.ts). */
+  .m-caret {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+
+  /* Still reads as "working", without a loop. */
+  .m-pending::after {
+    animation: none !important;
+    background-image: none !important;
+    background-color: rgba(var(--accent-rgb), 0.14) !important;
+  }
+
+  .m-expand,
+  .m-marker,
+  .m-hover,
+  .m-press {
+    transition-duration: 1ms !important;
+  }
+
+  .m-hover::after,
+  .m-hover img,
+  .m-hover canvas {
+    transition-duration: 1ms !important;
+  }
+
+  .m-hover:hover img,
+  .m-hover:hover canvas {
+    filter: none !important;
+    transform: none !important;
+  }
+}
