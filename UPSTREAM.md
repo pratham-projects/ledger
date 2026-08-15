@@ -38,21 +38,33 @@ demo-only files this set of repos always adds: `README.md`, `UPSTREAM.md`, `verc
 `scripts/sync-ui.sh`, `src/components/demo/demo-badge.tsx` (and its one-line mount in
 `src/App.tsx`).
 
-## Known gap — not addressed in this pass
+## Known gap — resolved
 
-The imagery review above covered `template-images.ts` only, as scoped. Two other modules
-in this same tree still hotlink third-party CDNs and were **not** reviewed or self-hosted:
+A follow-up pass closed the gap the imagery review above left open. Four more modules in
+this tree hotlinked third-party CDNs live at runtime and have since been swapped wholesale
+to self-hosted or seeded-local sources (unlike the `template-images.ts` pass, this one
+skipped individual visual review of the ~500 assets — the owner's call, given the volume):
 
-- **`src/lib/template-videos.ts`** — ~247 `cdn.openart.ai` video preview URLs.
-- **`src/lib/stock.ts`** — 246 `assets.lummi.ai` / `www.lummi.ai` photo URLs.
-- **`src/lib/catalog.ts`** — 6 `cdn.openart.ai` checkpoint-preview video URLs.
-- **`src/components/tool-workspace/my-generations-panel.tsx`** — 1 `cdn.openart.ai` URL.
+- **`src/lib/template-videos.ts`** — 247 `cdn.openart.ai` video URLs → each entry keeps its
+  real, `ffprobe`-measured `aspect` but now resolves `url` through `placeholderVideoSrc()`
+  (`lib/placeholder-art.ts`), a seeded pick from 12 self-hosted static-frame clips at
+  `public/videos/placeholder-0.mp4`…`placeholder-11.mp4` (same dark/accent dot pattern as
+  the image placeholders, baked to a silent 2s loop via ffmpeg at authoring time).
+- **`src/lib/stock.ts`** — 246 `assets.lummi.ai`/`www.lummi.ai` photo URLs → `src`/`srcSet`
+  now resolve through `placeholderStill()`, the same seeded SVG data-URI generator used for
+  `template-images.ts`'s 11 dropped slots. Real aspect ratios (`w`/`h`, probed at author
+  time) are kept as layout data; the pixels are locally generated.
+- **`src/lib/catalog.ts`** — 6 `cdn.openart.ai` checkpoint-preview URLs → repointed to the
+  four checkpoint clips already self-hosted under `public/models/*.mp4` (via the existing
+  slug form `checkpointClip()` already supported), reusing real local footage instead of
+  minting new placeholder assets.
+- **`src/components/tool-workspace/my-generations-panel.tsx`** — 1 `cdn.openart.ai` URL →
+  repointed to `/models/lumen-xl.mp4`, one of the same local checkpoint clips.
 
-These are a much larger surface (~500 assets) than the 44 covered here, and reviewing them
-follows the same process: download, look at every one, self-host the keepers, extend
-`placeholder-art.ts` for the rest. Until that pass happens, the running app still makes
-live network requests to `openart.ai` and `lummi.ai`, which will fail a "network tab is
-silent" check and should block making this repo public.
+Confirmed via `grep -rn "openart\.ai\|lummi\.ai" src/ dist/` that no live URL to either host
+remains anywhere in source or the built output (only historical comments in `src/`
+mentioning the hostnames by name survive). `bun run build` stays clean. The app now makes
+zero outbound requests to `openart.ai` or `lummi.ai`.
 
 ## Syncing a future UI change
 

@@ -57,3 +57,21 @@ export function placeholderStill(seed: string, aspect: number): string {
     `viewBox="0 0 ${width} ${height}"><rect width="${width}" height="${height}" fill="${BG}"/>${dots}</svg>`;
   return `data:image/svg+xml,${encodeURIComponent(svg)}`;
 }
+
+/**
+ * Video counterpart of `placeholderStill`, for `lib/template-videos.ts`'s clip pool and
+ * anywhere else a `<video src>` slot stood in for generated output. A `<video>` element
+ * can't take an inline SVG as `src` the way `<img>` can, so this can't be a data: URI the
+ * same way — instead it's a small, fixed pool of self-hosted static-frame clips
+ * (`public/videos/placeholder-0.mp4` … `placeholder-11.mp4`), each rendered once at
+ * authoring time from this same dot-scatter pattern (same `BG`/`ACCENT`, same algorithm,
+ * baked to a 2s silent loop via ffmpeg) and checked into the repo — no network request,
+ * same seeded-hash contract as `placeholderStill`: a given seed always resolves to the
+ * same clip.
+ */
+const VIDEO_PLACEHOLDER_COUNT = 12;
+
+export function placeholderVideoSrc(seed: string): string {
+  const index = hash(seed) % VIDEO_PLACEHOLDER_COUNT;
+  return `/videos/placeholder-${index}.mp4`;
+}

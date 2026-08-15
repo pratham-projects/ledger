@@ -5,8 +5,11 @@ import { MediaTemplateGrid, type MediaTemplate } from "@/components/tool-workspa
 import { PresetGrid } from "@/components/tool-workspace/preset-grid";
 import type { Preset } from "@/components/tool-workspace/preset-list";
 
-const SHOWCASE_VIDEO =
-  "https://cdn.openart.ai/production/2026-03/uploads/xM06ZTKxdAB6BPqDRHoh/file_Wdg3fwJU_1773400839680.mp4";
+// Reuses one of the checkpoint preview clips already self-hosted under `public/models/`
+// (see `lib/catalog.ts`) rather than a dedicated asset — this is decorative chrome behind
+// the login pitch, not a specific claim about output, so borrowing an existing local clip
+// beats hotlinking or minting a new one.
+const SHOWCASE_VIDEO = "/models/lumen-xl.mp4";
 
 /**
  * The "My Generations" tab. There is no account-backed generation history in this

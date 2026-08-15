@@ -1,22 +1,26 @@
 /**
- * Real photography, standing in for generated output.
+ * Placeholder stills, standing in for generated output.
  *
  * Every placeholder on this site used to be a procedural colour mosaic. That was honest
  * but useless: you cannot judge a grid, a lightbox, or a preview tile against blobs that
- * are all the same square. These are 246 real images from Lummi, at 39 distinct aspect
- * ratios, so every surface is designed against the shape of the problem.
+ * are all the same square. This pool keeps 246 entries at 39 distinct aspect ratios, so
+ * every surface is still designed against the shape of the problem — but the pixels
+ * themselves used to be 246 real images hotlinked live from `assets.lummi.ai`, which this
+ * repo doesn't do (see `UPSTREAM.md`, resolved). `src`/`srcSet` below resolve through
+ * `placeholderStill`, the same self-hosted seeded-dot generator `lib/template-videos.ts`'s
+ * clips resolve through for video. No network request past this app's own origin.
  *
- * **Dimensions are baked in.** They were probed once at author time and stored here, which
- * is the whole performance argument: the layout knows every aspect ratio before a single
- * byte of image is requested, so it reserves exact space and never shifts. `w` and `h` are
- * a reference render, not the native file — only their ratio is meaningful.
- *
- * The `w=` parameter is a real server-side resize, so the ladder below is a genuine
- * srcset: a 180px tile fetches 256px, not a 2048px original scaled down in the browser.
+ * **Dimensions are baked in.** `w`/`h` were probed once at author time against the
+ * original Lummi images and are kept here purely as real aspect-ratio data — the layout
+ * knows every ratio before a single byte of image is requested, so it reserves exact space
+ * and never shifts. They are a reference render, not the native file; only their ratio is
+ * meaningful now that the pixels are locally generated.
  *
  * Source list: `dummy-responses/generated-images.txt`. Replace all of this the day the
  * Laravel generation API returns real output.
  */
+
+import { placeholderStill } from "@/lib/placeholder-art";
 
 /** `a` = assets.lummi.ai object, `p` = the pro image endpoint. */
 type StockKind = "a" | "p";
@@ -284,18 +288,19 @@ export interface StockImage {
   srcSet: string;
 }
 
-function url(kind: StockKind, id: string, width: number): string {
-  return kind === "a"
-    ? `https://assets.lummi.ai/assets/${id}?auto=format&w=${width}`
-    : `https://www.lummi.ai/api/pro/image/${id}?asset=original&auto=format&w=${width}`;
-}
-
-export const STOCK: StockImage[] = POOL.map(([kind, id, w, h]) => ({
-  id,
-  aspect: w / h,
-  src: (width: number) => url(kind, id, width),
-  srcSet: WIDTHS.map((width) => `${url(kind, id, width)} ${width}w`).join(", "),
-}));
+export const STOCK: StockImage[] = POOL.map(([kind, id, w, h]) => {
+  const aspect = w / h;
+  // `kind`/id no longer address a remote asset — `src` ignores the requested width because
+  // a data: URI has no ladder to climb, but the signature stays so every call site (which
+  // passes a tile width for a real srcset) keeps working unchanged.
+  const placeholder = placeholderStill(`${kind}:${id}`, aspect);
+  return {
+    id,
+    aspect,
+    src: () => placeholder,
+    srcSet: WIDTHS.map((width) => `${placeholder} ${width}w`).join(", "),
+  };
+});
 
 /**
  * The subset that can plausibly pass for model output.

@@ -76,7 +76,7 @@ export const CHECKPOINTS: Checkpoint[] = [
     tagline: "Balanced general-purpose base. Clean skin, forgiving with short prompts.",
     nativeResolution: "1024×1024",
     costPerImage: 2,
-    preview: "https://cdn.openart.ai/community-post-assets/f5c0f43df9285f47824c59b7849bb7f7/output/0.mp4",
+    preview: "lumen-xl",
     poster: "/models/lumen-xl.jpg",
   },
   {
@@ -86,7 +86,7 @@ export const CHECKPOINTS: Checkpoint[] = [
     tagline: "Illustration-leaning. Holds linework and flat color without muddying.",
     nativeResolution: "1024×1024",
     costPerImage: 2,
-    preview: "https://cdn.openart.ai/community-post-assets/356d264d30295b3ca22dc9f59a821dcb/output/0.mp4",
+    preview: "inkwell",
     poster: "/models/inkwell.jpg",
   },
   {
@@ -96,7 +96,7 @@ export const CHECKPOINTS: Checkpoint[] = [
     tagline: "Photographic. Heavier, slower, best with detailed prompts.",
     nativeResolution: "1152×896",
     costPerImage: 3,
-    preview: "https://cdn.openart.ai/community-post-assets/cb04d1e2fdea551b95767db788d79433/output/0.mp4",
+    preview: "ferrograph",
     poster: "/models/ferrograph.jpg",
   },
   {
@@ -106,7 +106,7 @@ export const CHECKPOINTS: Checkpoint[] = [
     tagline: "Fast and cheap. Lower fidelity — good for iterating on composition.",
     nativeResolution: "768×768",
     costPerImage: 1,
-    preview: "https://cdn.openart.ai/community-post-assets/6574bb2772bb59f9a1b4d938ac223748/output/0.mp4",
+    preview: "tessera-mini",
     poster: "/models/tessera-mini.jpg",
   },
   {
@@ -116,7 +116,7 @@ export const CHECKPOINTS: Checkpoint[] = [
     tagline: "Color-forward generalist for bold lighting and graphic scenes.",
     nativeResolution: "1024×1024",
     costPerImage: 2,
-    preview: "https://cdn.openart.ai/community-post-assets/196da678045551c79c5ab02efa514075/output/0.mp4",
+    preview: "inkwell",
     poster: "/models/inkwell.jpg",
   },
   {
@@ -126,7 +126,7 @@ export const CHECKPOINTS: Checkpoint[] = [
     tagline: "Quick concept model for loose compositions and rapid iteration.",
     nativeResolution: "768×768",
     costPerImage: 1,
-    preview: "https://cdn.openart.ai/community-post-assets/c20c62f01cbc5a66aac518b500817fdc/output/0.mp4",
+    preview: "lumen-xl",
     poster: "/models/lumen-xl.jpg",
   },
 ];
